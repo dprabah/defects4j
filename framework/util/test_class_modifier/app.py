@@ -1,3 +1,4 @@
+#!usr/bin/python
 import sys
 from file_editor import test_updater_v2
 
