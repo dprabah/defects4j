@@ -75,8 +75,11 @@ project-specific build file ("project_id"/"project_id".build.xml) for the
          This property file is automatically generated. -->
     <property file="${d4j.workdir}/${d4j.properties}"/>
 
-    <property name="slicer" value="/home/pepper/Dropbox/Documents/Study/Masters/thesis/javaslicer/javaslicer/assembly/slicer.jar" />
-    <property name="tracer" value="/home/pepper/Dropbox/Documents/Study/Masters/thesis/javaslicer/javaslicer/assembly/tracer.jar" />
+<!--    <property name="slicer" value="/home/pepper/Dropbox/Documents/Study/Masters/thesis/javaslicer/javaslicer/assembly/slicer.jar" />-->
+<!--    <property name="tracer" value="/home/pepper/Dropbox/Documents/Study/Masters/thesis/javaslicer/javaslicer/assembly/tracer.jar" />-->
+
+    <property name="slicer" value="${d4j.home}/framework/lib/slicer.jar" />
+    <property name="tracer" value="${d4j.home}/framework/lib/tracer.jar" />
     <property name="tracer-file-path" value="${d4j.home}/framework/projects/lib/javaslicer/tracefiles/" />
     <property name="tracer-file-path_2" value="${d4j.home}/framework/projects/lib/javaslicer/tracefiles/" />
 

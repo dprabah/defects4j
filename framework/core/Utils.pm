@@ -525,7 +525,7 @@ sub get_assertion_line_numbers {
     # push(@proper_tests, `grep -nr -A1 '\@After' $class_path | grep 'public void' `);
     # push(@proper_tests, `grep -nr -A1 '\@Before' $class_path | grep 'public void' `);
     push(@proper_tests, `grep -nr 'public void' $class_path`);
-    push(@proper_tests, `grep -nr 'private void' $class_path`);
+    # push(@proper_tests, `grep -nr 'private void' $class_path`);
 
     foreach my $grep (@expected_assertion_list) {
         push(@assert_methods, `grep -nr '$grep' $class_path`);
