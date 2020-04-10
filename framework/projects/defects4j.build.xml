@@ -75,6 +75,11 @@ project-specific build file ("project_id"/"project_id".build.xml) for the
          This property file is automatically generated. -->
     <property file="${d4j.workdir}/${d4j.properties}"/>
 
+    <property name="slicer" value="/home/pepper/Dropbox/Documents/Study/Masters/thesis/javaslicer/javaslicer/assembly/slicer.jar" />
+    <property name="tracer" value="/home/pepper/Dropbox/Documents/Study/Masters/thesis/javaslicer/javaslicer/assembly/tracer.jar" />
+    <property name="tracer-file-path" value="${d4j.home}/framework/projects/lib/javaslicer/tracefiles/" />
+    <property name="tracer-file-path_2" value="${d4j.home}/framework/projects/lib/javaslicer/tracefiles/" />
+
     <!-- Include build file that defines all export targets -->
     <import file="${d4j.home}/framework/projects/defects4j.export.xml"/>
 
@@ -391,6 +396,96 @@ project-specific build file ("project_id"/"project_id".build.xml) for the
     <target name="reset.cobertura.ser" if="classes.instrumented.uptodate">
         <copy file="${d4j.dir.classes.instrumented}/${d4j.file.cobertura.ser}"
               todir="${d4j.workdir}" overwrite="true" />
+    </target>
+
+
+
+    <target name="run.tracer.script">
+        <property name="traceFileDirPath" value="default-module" />
+        <property name="className" value="default-module" />
+        <exec executable="/bin/bash" output="${traceFileDirPath}/${className}.junit.txt">
+            <arg value="${d4j.home}/framework/projects/lib/trace.sh"/>
+            <arg value="-c${className}"/>
+            <arg value="-p${traceFileDirPath}"/>
+        </exec>
+    </target>
+
+    <target name="run.slicer.script">
+        <property name="traceParameters" value="default-module" />
+        <property name="traceFile" value="default-module" />
+
+        <exec executable="/bin/bash" output="${traceFile}.slice.output">
+            <arg value="${d4j.home}/framework/projects/lib/slice.sh"/>
+            <arg value="-p${traceParameters}"/>
+            <arg value="-t${traceFile}"/>
+        </exec>
+    </target>
+
+    <target name="create.slicer.script" description="Creates a script file in home dir, to slice the given class file" >
+        <pathconvert property="classpathProp" refid="d4j.test.classpath"/>
+        <pathconvert property="manual_tests" refid="all.manual.tests"/>
+        <echo file="${d4j.home}/framework/projects/lib/slice.sh" append="false">
+helpFunction(){
+echo ""
+echo "Usage: slice.sh -p trace-parameters -t trace-file"
+echo -e "\t-t Name of trace file"
+echo -e "\t-p Trace parameters"
+exit 1 # Exit script after printing help
+}
+
+while getopts "t:p:" opt
+do
+case "$opt" in
+t ) parameterA="$OPTARG" ;;
+p ) parameterC="$OPTARG" ;;
+? ) helpFunction ;; # Print helpFunction in case parameter is non-existent
+esac
+done
+
+if [ -z "$parameterA" ]
+then
+echo "With out providing trace file name, I cannot start";
+helpFunction
+fi
+
+if [ -z "$parameterC" ]
+then
+echo "With out providing class file name, I cannot grep a particular class";
+helpFunction
+fi
+
+java -Xmx2g -jar ${slicer} -p "$parameterA" "$parameterC"
+        </echo>
+    </target>
+
+    <target name="create.tracer.script" description="Creates a script file in home dir, to trace the given class file" >
+        <pathconvert property="classpathProp" refid="d4j.test.classpath"/>
+        <pathconvert property="manual_tests" refid="all.manual.tests"/>
+        <echo file="${d4j.home}/framework/projects/lib/trace.sh" append="false">
+helpFunction() {
+echo ""
+echo "Usage: trace.sh -c class file name"
+echo -c "Name of class file to trace"
+exit 1 # Exit script after printing help
+}
+
+while getopts "c:p:" opt
+do
+case "$opt" in
+c ) parameterA="$OPTARG" ;;
+p ) parameterB="$OPTARG" ;;
+? ) helpFunction ;; # Print helpFunction in case parameter is non-existent
+esac
+done
+
+if [ -z "$parameterA" ]
+then
+echo "error: Without providing class file name, I cannot start";
+helpFunction
+fi
+
+java -javaagent:${tracer}=tracefile:"$parameterB"/"$parameterA" -cp ${classpathProp} org.junit.runner.JUnitCore "$parameterA"
+        </echo>
     </target>
 
 </project>

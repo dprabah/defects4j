@@ -129,6 +129,13 @@ export a version-specific property.
 =cut
 $cmd_descr{export}="export a version-specific property";
 
+=pod
+=item * L<B< checked >|d4j::d4j-checked/>
+runs checked coverage analysis for a checked-out project version.
+=back
+=cut
+$cmd_descr{checked}="runs checked coverage analysis for a checked-out project version";
+
 #
 # Issue usage message and quit
 #

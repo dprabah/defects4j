@@ -1,0 +1,352 @@
+#-------------------------------------------------------------------------------
+# Copyright (c) 2014-2019 René Just, Darioush Jalali, and Defects4J contributors.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+#-------------------------------------------------------------------------------
+
+use strict;
+use warnings;
+use Getopt::Std;
+use JSON;
+use List::MoreUtils qw(first_index);
+use Digest::file qw(digest_file_hex);
+use File::Slurp;
+
+use Constants;
+use Utils;
+use Project;
+
+
+sub _usage {
+    print (STDERR "usage: $0 -a action \n\n");
+    exit 1;
+}
+
+my %cmd_opts;
+getopts('a:w:', \%cmd_opts) or _usage;
+
+my $WORK_DIR    = Utils::get_abs_path($cmd_opts{w} // ".");
+my $config = Utils::read_config_file("$WORK_DIR/$CONFIG");
+my $props = Utils::read_config_file("$WORK_DIR/$PROP_FILE");
+
+unless(defined $config and defined $props){
+    print(STDERR "$WORK_DIR is not a valid working directory!\n");
+    exit 1;
+}
+
+my @grep_assert_patterns = ('assert.*(.*);', 'verify(.*);');
+my $CURRENT_BUG_TRACE_FILE_DIR = "$PROJECTS_DIR/$config->{$CONFIG_PID}/trace_files";
+my $CURRENT_BUG_REPORT_DIR = "$CURRENT_BUG_TRACE_FILE_DIR/$config->{$CONFIG_VID}";
+my $CURRENT_BUG_REPORT_FILE = "$CURRENT_BUG_REPORT_DIR/checked_coverage_report.json";
+my $CURRENT_BUG_SKIP_ABLE_FILE = "$CURRENT_BUG_TRACE_FILE_DIR/skip_files.json";
+my $CURRENT_BUG_TRACING_DONE_FILE = "$CURRENT_BUG_REPORT_DIR/tracing_completed.json";
+$config->{$CONFIG_VID} =~ /(\d+)/;
+my $previous_bug_report_number = int($1) - 1;
+$config->{$CONFIG_VID} =~ /(\D+)/;
+my $previous_bug_report_id = $1;
+my $PREVIOUS_BUG_REPORT_FILE = "$CURRENT_BUG_TRACE_FILE_DIR/$previous_bug_report_number$previous_bug_report_id/checked_coverage_report.json";
+my $PREVIOUS_BUG_TRACING_DONE_FILE = "$CURRENT_BUG_TRACE_FILE_DIR/$previous_bug_report_number$previous_bug_report_id/tracing_completed.json";
+my $CONST_HASH_DIGEST = "HASH_DIGEST";
+my $CONST_IS_TESTING_DONE = "IS_TESTING_DONE";
+my $CONST_TESTING_DONE = "DONE";
+my $CONST_TESTING_STARTED = "STARTED";
+my $CONST_TEST_SKIPPED = "SKIPPED";
+my $CONST_TEST_SAME_HASH = "SAME_HASH";
+
+# Instantiate project and set working directory
+my $project = Project::create_project($config->{$CONFIG_PID});
+$project->{prog_root} = $WORK_DIR;
+
+# Creates a script file, trace.sh in home dir, to generate trace for the provided class.
+$project->_ant_call("create.tracer.script");
+$project->_ant_call("create.slicer.script");
+
+my @tests = Utils::get_all_classes($WORK_DIR, $props->{$PROP_DIR_SRC_TESTS});
+my $checked_json = create_or_retrieve_coverage_file();
+my $current_completed_list = create_or_retrieve_current_completed_list();
+my $previous_completed_list = create_or_retrieve_previous_completed_list();
+my @skipped_tests = retrieve_skipped_files();
+my %assertions;
+my $current_class_name;
+my $total_number_of_tests = scalar @tests;
+my $total_number_of_tests_for_conv = $total_number_of_tests;
+print("Total number of tests: $total_number_of_tests \n");
+my $run_only;
+foreach my $test (@tests) {
+    my $start = time();
+    --$total_number_of_tests;
+    $current_class_name = Utils::convert_filename_to_class_name($test, $props->{$PROP_DIR_SRC_TESTS});
+    my $current_class_java_name = Utils::convert_filename_to_java_name($test, $props->{$PROP_DIR_SRC_TESTS});
+    my $current_hash = $current_completed_list->{$current_class_java_name} ->{$CONST_HASH_DIGEST};
+    my $previous_hash = $previous_completed_list->{$current_class_java_name}->{$CONST_HASH_DIGEST};
+    my $current_done = $current_completed_list->{$current_class_java_name}->{$CONST_IS_TESTING_DONE};
+
+    # if (index($test, 'ComparableMatchersTest.java') != -1) {
+    print("Remaining number of tests: $total_number_of_tests out of: $total_number_of_tests_for_conv ");
+    print("Current running test: $current_class_name \n");
+
+    if(!defined $previous_hash){
+        $previous_hash = "DUMMY_TEXT";
+    }
+
+    if ($current_class_java_name ~~ @skipped_tests){
+        $current_completed_list->{$current_class_java_name}->{$CONST_IS_TESTING_DONE} = $CONST_TEST_SKIPPED;
+        store_current_completed_list();
+        next;
+    }
+
+    if(($previous_hash eq $current_hash)){
+        $current_completed_list->{$current_class_java_name}->{$CONST_IS_TESTING_DONE} = $CONST_TEST_SAME_HASH;
+        store_current_completed_list();
+        next;
+    }
+
+    if($current_done eq $CONST_TESTING_DONE){
+        $current_completed_list->{$current_class_java_name}->{$CONST_IS_TESTING_DONE} = $CONST_TESTING_DONE;
+        store_current_completed_list();
+        next;
+    }
+    $current_completed_list->{$current_class_java_name}->{$CONST_IS_TESTING_DONE} = $CONST_TESTING_STARTED;
+    store_current_completed_list();
+    compute_checked_coverage($test);
+    $current_completed_list->{$current_class_java_name}->{$CONST_IS_TESTING_DONE} = $CONST_TESTING_DONE;
+    store_current_completed_list();
+    store_current_checked_coverage();
+    unlink("$CURRENT_BUG_REPORT_DIR/$current_class_name");
+    my $end = time();
+    my $time_took = scalar $end- scalar $start;
+    print("Time I took to finish computation: $time_took\n")
+  # }
+}
+sub store_current_completed_list{
+    open my $fh, '>', $CURRENT_BUG_TRACING_DONE_FILE;
+    print $fh encode_json($current_completed_list);
+    close($fh);
+}
+
+sub store_current_checked_coverage{
+    open my $fh, '>', $CURRENT_BUG_REPORT_FILE;
+    print $fh encode_json($checked_json);
+    close($fh);
+}
+
+sub update_coverage_if_exists {
+    my $checked_json_prev;
+    if (-f $PREVIOUS_BUG_REPORT_FILE) {
+        $checked_json_prev =  decode_json(read_file($PREVIOUS_BUG_REPORT_FILE));
+    }else{
+        $checked_json_prev = [];
+    }
+
+    return $checked_json_prev;
+}
+
+sub compute_checked_coverage {
+    my ($test) = @_;
+    %assertions = Utils::get_assertion_line_numbers($test, @grep_assert_patterns);
+    my $trace_file_path = "$CURRENT_BUG_REPORT_DIR/$current_class_name";
+    my $trace_file_slice_output_path = "$CURRENT_BUG_REPORT_DIR/$current_class_name.slice.output";
+    trace();
+    slice($trace_file_path, $trace_file_slice_output_path);
+    foreach my $key (keys %{$checked_json}) {
+        my @lines = ();
+        #if (index($key, 'org.mockito.ArgumentCaptor') != -1) {
+        push(@lines, `cat $trace_file_slice_output_path | grep -F "$key."`);
+        my $tmp_line_number = $checked_json->{$key};
+        foreach (@lines) {
+            my $line_no = extract_line_number($_);
+            $tmp_line_number = join '', $line_no,',',$tmp_line_number;
+        }
+        $checked_json->{$key} = clean_duplicate($tmp_line_number);
+        #}
+    }
+}
+
+# print(digest_file_hex($test, "SHA-512"));
+sub create_or_retrieve_current_completed_list {
+    if (-f $CURRENT_BUG_TRACING_DONE_FILE) {
+        return decode_json(read_file($CURRENT_BUG_TRACING_DONE_FILE));
+    }else{
+        my $completed_list_json;
+        foreach my $test_class (@tests) {
+            my $test_classname_java = Utils::convert_filename_to_java_name($test_class, $props->{$PROP_DIR_SRC_TESTS});
+            $completed_list_json->{$test_classname_java}->{$CONST_HASH_DIGEST} = digest_file_hex($test_class, "SHA-512");
+            $completed_list_json->{$test_classname_java}->{$CONST_IS_TESTING_DONE} = "";
+        }
+        `mkdir -p $CURRENT_BUG_REPORT_DIR`;
+        open my $fh, '>', $CURRENT_BUG_TRACING_DONE_FILE;
+        print $fh encode_json($completed_list_json);
+        return $completed_list_json;
+    }
+}
+
+sub create_or_retrieve_previous_completed_list{
+    if (-f $PREVIOUS_BUG_TRACING_DONE_FILE) {
+        return decode_json(read_file($PREVIOUS_BUG_TRACING_DONE_FILE));
+    }else {
+        return {};
+    }
+}
+
+# A json file is created with all class names as key and lines that covered or not as an array, with boolean as values.
+sub create_or_retrieve_coverage_file {
+    if (-f $CURRENT_BUG_REPORT_FILE) {
+        return decode_json(read_file($CURRENT_BUG_REPORT_FILE));
+    } elsif (-f $PREVIOUS_BUG_REPORT_FILE){
+        return decode_json(read_file($PREVIOUS_BUG_REPORT_FILE));
+    } else {
+        `mkdir -p $CURRENT_BUG_REPORT_DIR`;
+        open my $fh, '>', $CURRENT_BUG_REPORT_FILE;
+        my @src = Utils::get_all_classes($WORK_DIR, $props->{$PROP_DIR_SRC_CLASSES});
+        foreach my $class (@src) {
+            $checked_json->{Utils::convert_filename_to_class_name($class, $props->{$PROP_DIR_SRC_CLASSES})} = "";
+        }
+        print $fh encode_json($checked_json);
+        return $checked_json;
+    }
+}
+
+sub retrieve_skipped_files {
+    if (-f $CURRENT_BUG_SKIP_ABLE_FILE) {
+        return decode_json(read_file($CURRENT_BUG_SKIP_ABLE_FILE));
+    } else {
+        return [];
+    }
+}
+
+sub clean_duplicate {
+    my ($line_numbers) = @_;
+    my @removables = ();
+    push(@removables, (split /,/, $line_numbers));
+    return join(",", uniq(@removables));
+}
+
+sub uniq {
+    my %seen;
+    grep !$seen{$_}++, @_;
+}
+
+sub slice {
+    my ($trace_file_path, $trace_file_slice_output_path) = @_;
+    my $trace_parameters = generate_trace_param();
+
+    $project->_ant_call("run.slicer.script -DtraceParameters=$trace_parameters -DtraceFile=$trace_file_path ");
+    my @ignorable_tests = ();
+    my @removables = ();
+    push(@ignorable_tests, `cat $trace_file_slice_output_path | grep error_method_name`);
+
+    if(@ignorable_tests){
+        @removables = ();
+        foreach(@ignorable_tests){
+            push(@removables, (split /:/, $_)[1]);
+        }
+        foreach(@removables) {
+            remove_assertion(int($_));
+            slice($trace_file_path, $trace_file_slice_output_path);
+        }
+    }
+}
+
+sub trace {
+    $project->_ant_call("run.tracer.script -DtraceFileDirPath=$CURRENT_BUG_REPORT_DIR -DclassName=$current_class_name");
+}
+
+sub extract_line_number{
+    my ($trace_line) = @_;
+
+    if ((split /:/, (split / /, $trace_line)[0])[1]){
+        return (split /:/, (split / /, $trace_line)[0])[1];
+    }else{
+        return 0;
+    }
+}
+
+sub generate_trace_param(){
+    my @params = ();
+    my @assertion_as_list = ();
+    foreach my $assertion (keys %assertions) {
+        if(rindex $assertion, '@Ignore', 0 != -1){
+            @assertion_as_list = @{$assertions{$assertion}};
+            #$assertion = substr($assertion, 0, -2);
+            for (@assertion_as_list) {
+                push(@params, "$current_class_name.$assertion:$_:*");
+            }
+        }
+    }
+    return join(',', @params);
+}
+
+sub remove_assertion {
+
+    # @_ >= 2 or die $ARG_ERROR;
+    my ($assertion_no) = @_;
+    print("came to remove assertion: $assertion_no\n");
+    foreach my $assertion (keys %assertions) {
+        my @array = grep {$_ ne $assertion_no} @{$assertions{$assertion}};
+        @{$assertions{$assertion}} =  @array;
+    }
+}
+
+sub trace_deprecated {
+    print("tracing $current_class_name \n");
+    print("$WORK_DIR \n");
+    Utils::exec_cmd("sh /home/pepper/Dropbox/Documents/Study/Masters/thesis/projects/defects4j/framework/projects/lib/trace.sh -c $current_class_name", "Run the tracer");
+}
+
+sub slice_deprecated {
+    my ($trace_parameters) = @_;
+    print("slicing $current_class_name \n");
+    my $trace_file_path = "$CURRENT_BUG_TRACE_FILE_DIR$current_class_name.trace.output";
+    my @trace_file_contents = ();
+    push(@trace_file_contents, `cat $trace_file_path`);
+    while (@trace_file_contents){
+        @trace_file_contents = ();
+        print("truncating");
+        print(@trace_file_contents);
+        truncate "$trace_file_path", 0;
+        sleep 1;
+        push(@trace_file_contents, `cat $trace_file_path`);
+    }
+
+    Utils::exec_cmd("sh /home/pepper/Dropbox/Documents/Study/Masters/thesis/projects/defects4j/framework/projects/lib/slice.sh -c $current_class_name -p $trace_parameters -t '$current_class_name'", "Run the slicer");
+    # `sh /home/pepper/Dropbox/Documents/Study/Masters/thesis/projects/defects4j/framework/projects/lib/slice.sh -c $current_class_name -p $trace_parameters -t '$current_class_name'`;
+    # print("slicing $current_class_name \n");
+    # print(`java -version`);
+    # return $output
+
+    my @ignorable_tests = ();
+    my @removables = ();
+
+    while (!@trace_file_contents){
+        @ignorable_tests = ();
+        sleep 1;
+        print("again \n");
+        push(@trace_file_contents, `cat $trace_file_path`);
+        push(@ignorable_tests, `cat $trace_file_path | grep error_method_name`);
+        if(@ignorable_tests){
+            last;
+        }
+    }
+
+    return 1;
+}
+
+1;
+
+

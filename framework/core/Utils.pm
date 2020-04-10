@@ -38,12 +38,13 @@ use strict;
 
 use File::Basename;
 use File::Spec;
+use File::Find;
 use Cwd qw(abs_path);
 use Carp qw(confess);
 use Fcntl qw< LOCK_EX SEEK_END >;
 
 use Constants;
-
+use JSON;
 my $dir = dirname(abs_path(__FILE__));
 
 =pod
@@ -461,6 +462,120 @@ sub get_all_test_suites {
     }
     print(STDERR "Found $count test suite archive(s)") if $DEBUG;
     return \%test_suites;
+}
+
+
+sub convert_filename_to_class_name {
+    # @_ >= 2 or die $ARG_ERROR;
+    my ($file_name, $tests_dir_path) = @_;
+    my @tmp_name = split /$tests_dir_path\//, $file_name;
+    @tmp_name= split /\./,  $tmp_name[1];
+    my $class_name  = replace("/",".", $tmp_name[0]);
+
+    return $class_name;
+}
+
+sub convert_classfile_name_to_java_name {
+    # @_ >= 2 or die $ARG_ERROR;
+    my ($file_name) = @_;
+    my $tmp_classname = (split /\./, $file_name)[-1];
+    return "$tmp_classname.java";
+}
+
+sub convert_filename_to_java_name {
+    # @_ >= 2 or die $ARG_ERROR;
+    my ($file_name, $tests_dir_path) = @_;
+    return convert_classfile_name_to_java_name(convert_filename_to_class_name($file_name, $tests_dir_path));
+}
+
+sub get_all_classes {
+    # @_ >= 2 or die $ARG_ERROR;
+    my ($root_dir, $tests_dir_path) = @_;
+    our @tests = ();
+    our @exts = qw(.java);
+
+    finddepth(\&wanted, "$root_dir/$tests_dir_path");
+
+    sub wanted {
+        # my @tmp_name = split /$tests_dir_path\//, $File::Find::name;
+        my ($name, $dir, $ext) = fileparse($File::Find::name, @exts);
+        if ( $ext eq '.java'){
+            # @tmp_name= split /\./,  $tmp_name[1];
+            push(@tests, $File::Find::name);
+        }
+    };
+    return @tests;
+}
+
+sub get_assertion_line_numbers {
+    # @_ >= 2 or die $ARG_ERROR;
+    my ($class_path, @expected_assertion_list) = @_;
+
+    my @proper_tests = ();
+    my @ignored_tests = ();
+    my @assert_methods = ();
+
+    my %tmp_result = ();
+    my %result = ();
+
+    my %u_result = ();
+
+    push(@ignored_tests, `grep -nr -A2 -B2 '\@Ignore' $class_path | grep 'public void' `);
+    # push(@proper_tests, `grep -nr -A1 '\@Test' $class_path | grep 'public void' `);
+    # push(@proper_tests, `grep -nr -A1 '\@After' $class_path | grep 'public void' `);
+    # push(@proper_tests, `grep -nr -A1 '\@Before' $class_path | grep 'public void' `);
+    push(@proper_tests, `grep -nr 'public void' $class_path`);
+    push(@proper_tests, `grep -nr 'private void' $class_path`);
+
+    foreach my $grep (@expected_assertion_list) {
+        push(@assert_methods, `grep -nr '$grep' $class_path`);
+    }
+
+    foreach my $proper_test (@proper_tests) {
+        my $tmp = (split /:/, (split /-/, $proper_test)[0])[0];
+        $tmp_result{$tmp}=$proper_test;
+    }
+
+    foreach my $ignore_test (@ignored_tests) {
+        my $tmp = (split /:/, (split /-/, $ignore_test)[0])[0];
+        $tmp_result{$tmp}="\@Ignore $ignore_test";
+    }
+
+    foreach my $assert_method (@assert_methods) {
+        my $tmp = (split /:/, (split /-/, $assert_method)[0])[0];
+        $tmp_result{$tmp}=$assert_method;
+    }
+
+    my $method_name;
+    foreach my $key (sort {$a <=> $b} keys %tmp_result) {
+        push(my @grep_result, grep(/ void/ ,$tmp_result{$key}));
+        push(my @is_ignored, grep(/\@Ignore/ ,$tmp_result{$key}));
+        if(scalar @grep_result > 0){
+            my $start_index = index($tmp_result{$key}, ' void') + 6;
+            my $tmp = substr($tmp_result{$key}, $start_index);
+
+            $method_name = (split /\(/, $tmp)[0];
+            if(scalar @is_ignored > 0){
+                # push @{$result{"\@Ignore $method_name"}}, $key;
+                $method_name = "\@Ignore $method_name"
+            }
+            #else{
+            #     push @{$result{$method_name}}, $key;
+            # }
+        }else{
+            if(defined $method_name){
+                push @{$result{$method_name}}, $key;
+            }
+        }
+    }
+    return %result;
+}
+
+sub replace {
+    my ($from,$to,$string) = @_;
+    $string =~s/$from/$to/ig;                          #case-insensitive/global (all occurrences)
+
+    return $string;
 }
 
 =pod
