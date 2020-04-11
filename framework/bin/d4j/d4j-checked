@@ -78,8 +78,8 @@ my $project = Project::create_project($config->{$CONFIG_PID});
 $project->{prog_root} = $WORK_DIR;
 
 # Creates a script file, trace.sh in home dir, to generate trace for the provided class.
-$project->_ant_call("create.tracer.script");
-$project->_ant_call("create.slicer.script");
+$project->_ant_call_comp("create.tracer.script");
+$project->_ant_call_comp("create.slicer.script");
 
 my @tests = Utils::get_all_classes($WORK_DIR, $props->{$PROP_DIR_SRC_TESTS});
 my $checked_json = create_or_retrieve_coverage_file();
@@ -263,7 +263,7 @@ sub slice {
     my ($trace_file_path, $trace_file_slice_output_path) = @_;
     my $trace_parameters = generate_trace_param();
 
-    $project->_ant_call("run.slicer.script -DtraceParameters=$trace_parameters -DtraceFile=$trace_file_path ");
+    $project->_ant_call_comp("run.slicer.script -DtraceParameters=$trace_parameters -DtraceFile=$trace_file_path ");
     my @ignorable_tests = ();
     my @removables = ();
     # push(@ignorable_tests, `cat $trace_file_slice_output_path | grep error_method_name`);
@@ -297,7 +297,7 @@ sub slice {
 sub  trim { my $s = shift; $s =~ s/^\s+|\s+$//g; return $s };
 
 sub trace {
-    $project->_ant_call("run.tracer.script -DtraceFileDirPath=$CURRENT_BUG_REPORT_DIR -DclassName=$current_class_name");
+    $project->_ant_call_comp("run.tracer.script -DtraceFileDirPath=$CURRENT_BUG_REPORT_DIR -DclassName=$current_class_name");
 }
 
 sub extract_line_number{
