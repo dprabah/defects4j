@@ -144,7 +144,7 @@ foreach my $test (@tests) {
     $current_completed_list->{$current_class_java_name}->{$CONST_IS_TESTING_DONE} = $CONST_DONE;
     store_current_completed_list();
     store_current_checked_coverage();
-    # unlink("$CURRENT_BUG_REPORT_DIR/$current_class_name");
+    unlink("$CURRENT_BUG_REPORT_DIR/$current_class_name");
     my $end = time();
     my $time_took = scalar $end- scalar $start;
     print("Time I took to finish computation: $time_took\n")
