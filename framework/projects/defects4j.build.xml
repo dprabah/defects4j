@@ -457,7 +457,7 @@ echo "With out providing class file name, I cannot grep a particular class";
 helpFunction
 fi
 
-java -Xmx2g -jar ${slicer} -p "$parameterA" "$parameterC"
+java -Xmx12g -jar ${slicer} -p "$parameterA" "$parameterC"
         </echo>
     </target>
 
