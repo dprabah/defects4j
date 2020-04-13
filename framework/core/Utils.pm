@@ -554,7 +554,7 @@ sub get_assertion_line_numbers {
             my $start_index = index($tmp_result{$key}, ' void') + 6;
             my $tmp = substr($tmp_result{$key}, $start_index);
 
-            $method_name = (split /\(/, $tmp)[0];
+            $method_name = trim((split /\(/, $tmp)[0]);
             if(scalar @is_ignored > 0){
                 # push @{$result{"\@Ignore $method_name"}}, $key;
                 $method_name = "\@Ignore $method_name"
@@ -570,6 +570,8 @@ sub get_assertion_line_numbers {
     }
     return %result;
 }
+
+sub trim { my $s = shift; $s =~ s/^\s+|\s+$//g; return $s };
 
 sub replace {
     my ($from,$to,$string) = @_;
