@@ -116,7 +116,7 @@ foreach my $test (@tests) {
     my $previous_hash = $previous_completed_list->{$current_class_java_name}->{$CONST_HASH_DIGEST};
     my $current_done = $current_completed_list->{$current_class_java_name}->{$CONST_IS_TESTING_DONE};
 
-       #if (index($test, 'VerificationOverTimeImplTest.java') != -1) {
+       # if (index($test, 'StrBuilderTest.java') != -1) {
     print("Remaining number of tests: $total_number_of_tests out of: $total_number_of_tests_for_conv ");
     print("Current running test: $current_class_name \n");
 
@@ -280,7 +280,7 @@ sub slice {
         @removables = ();
         foreach(@ignorable_tests){
             my $removable_str = (split /:/, $_)[-1];
-            if (trim($removable_str) eq '') {
+            if (Utils::trim($removable_str) eq '') {
                 $removable_str = (split /:/, $_)[1];
             }
             if(looks_like_number($removable_str)){
@@ -291,7 +291,7 @@ sub slice {
                 }
             }else{
                 print("came to remove assertion: $removable_str\n");
-                delete($assertions{trim($removable_str)});
+                delete($assertions{Utils::trim($removable_str)});
                 slice($trace_file_path, $trace_file_slice_output_path);
             }
         }
@@ -301,8 +301,6 @@ sub slice {
         # }
     }
 }
-
-sub  trim { my $s = shift; $s =~ s/^\s+|\s+$//g; return $s };
 
 sub trace {
     $project->_ant_call_comp("run.tracer.script -DtraceFileDirPath=$CURRENT_BUG_REPORT_DIR -DclassName=$current_class_name");
