@@ -143,9 +143,9 @@ foreach my $test (@tests) {
         $previous_hash = "DUMMY_TEXT";
     }
 
-    if($current_done eq $CONST_STARTED){
-        next;
-    }
+    # if($current_done eq $CONST_STARTED){
+    #     next;
+    # }
 
     if ($current_class_java_name ~~ @skipped_tests){
         $current_completed_list->{$current_class_java_name}->{$CONST_IS_TESTING_DONE} = $CONST_SKIPPED;
