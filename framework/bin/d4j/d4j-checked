@@ -41,8 +41,8 @@ sub _usage {
 }
 
 my %cmd_opts;
-getopts('a:w:', \%cmd_opts) or _usage;
-
+getopts('w:c:', \%cmd_opts) or _usage;
+my $IS_EXPORT_SRC_CLASS = $cmd_opts{c};
 my $WORK_DIR    = Utils::get_abs_path($cmd_opts{w} // ".");
 my $config = Utils::read_config_file("$WORK_DIR/$CONFIG");
 my $props = Utils::read_config_file("$WORK_DIR/$PROP_FILE");
@@ -59,6 +59,7 @@ my $CURRENT_BUG_REPORT_FILE = "$CURRENT_BUG_REPORT_DIR/checked_coverage_report.j
 my $CURRENT_BUG_SKIP_ABLE_FILE = "$CURRENT_BUG_TRACE_FILE_DIR/skip_files.json";
 my $CURRENT_BUG_TRACING_DONE_FILE = "$CURRENT_BUG_REPORT_DIR/tracing_completed.json";
 my $TEST_MODIFIER_PATH = "$UTIL_DIR/test_class_modifier/app.py";
+my $EXPORT_SRC_CLASS_FILE_PATH = "$WORK_DIR/all_classes";
 $config->{$CONFIG_VID} =~ /(\d+)/;
 my $previous_bug_report_number = int($1) - 1;
 $config->{$CONFIG_VID} =~ /(\D+)/;
@@ -82,6 +83,7 @@ $project->_ant_call_comp("create.tracer.script");
 $project->_ant_call_comp("create.slicer.script");
 
 my @tests = Utils::get_all_classes($WORK_DIR, $props->{$PROP_DIR_SRC_TESTS});
+my @src = Utils::get_all_classes($WORK_DIR, $props->{$PROP_DIR_SRC_CLASSES});
 my $checked_json = create_or_retrieve_coverage_file();
 my $current_completed_list = create_or_retrieve_current_completed_list();
 my $previous_completed_list = create_or_retrieve_previous_completed_list();
@@ -90,6 +92,23 @@ my %assertions;
 my $current_class_name;
 my $total_number_of_tests = scalar @tests;
 my $total_number_of_tests_for_conv = $total_number_of_tests;
+
+if(defined $IS_EXPORT_SRC_CLASS){
+    print("Computing coverage report for all classes! \n");
+    if (-f $EXPORT_SRC_CLASS_FILE_PATH) {
+        open my $fh, '>', $EXPORT_SRC_CLASS_FILE_PATH;
+        print $fh "";
+        close($fh);
+    }
+    foreach (@src) {
+        my $java_class_file = Utils::convert_filename_to_class_name($_, $props->{$PROP_DIR_SRC_CLASSES});
+        append_given_content_to_file("$java_class_file\n", $EXPORT_SRC_CLASS_FILE_PATH);
+    }
+    `defects4j coverage -i $EXPORT_SRC_CLASS_FILE_PATH`;
+    print("done! \n");
+    exit(0);
+}
+
 print("Total number of tests: $total_number_of_tests \n");
 print("Begin to modify assert by exception tests \n");
 foreach my $test (@tests) {
@@ -170,6 +189,13 @@ sub store_current_checked_coverage{
     close($fh);
 }
 
+sub append_given_content_to_file{
+    my ($content, $file) = @_;
+    open my $fh, '>>', $file;
+    print $fh $content;
+    close($fh);
+}
+
 sub update_coverage_if_exists {
     my $checked_json_prev;
     if (-f $PREVIOUS_BUG_REPORT_FILE) {
@@ -238,7 +264,6 @@ sub create_or_retrieve_coverage_file {
     } else {
         `mkdir -p $CURRENT_BUG_REPORT_DIR`;
         open my $fh, '>', $CURRENT_BUG_REPORT_FILE;
-        my @src = Utils::get_all_classes($WORK_DIR, $props->{$PROP_DIR_SRC_CLASSES});
         foreach my $class (@src) {
             $checked_json->{Utils::convert_filename_to_class_name($class, $props->{$PROP_DIR_SRC_CLASSES})} = "";
         }
