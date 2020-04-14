@@ -59,7 +59,9 @@ my $CURRENT_BUG_REPORT_FILE = "$CURRENT_BUG_REPORT_DIR/checked_coverage_report.j
 my $CURRENT_BUG_SKIP_ABLE_FILE = "$CURRENT_BUG_TRACE_FILE_DIR/skip_files.json";
 my $CURRENT_BUG_TRACING_DONE_FILE = "$CURRENT_BUG_REPORT_DIR/tracing_completed.json";
 my $TEST_MODIFIER_PATH = "$UTIL_DIR/test_class_modifier/app.py";
+my $LINE_COVERAGE_CALC_PATH = "$UTIL_DIR/test_class_modifier/compute_statement_coverage.py";
 my $EXPORT_SRC_CLASS_FILE_PATH = "$WORK_DIR/all_classes";
+my $RAW_COVERAGE_XML = "$WORK_DIR/coverage.xml";
 $config->{$CONFIG_VID} =~ /(\d+)/;
 my $previous_bug_report_number = int($1) - 1;
 $config->{$CONFIG_VID} =~ /(\D+)/;
@@ -104,7 +106,8 @@ if(defined $IS_EXPORT_SRC_CLASS){
         my $java_class_file = Utils::convert_filename_to_class_name($_, $props->{$PROP_DIR_SRC_CLASSES});
         append_given_content_to_file("$java_class_file\n", $EXPORT_SRC_CLASS_FILE_PATH);
     }
-    `defects4j coverage -i $EXPORT_SRC_CLASS_FILE_PATH`;
+    # `defects4j coverage -i $EXPORT_SRC_CLASS_FILE_PATH`;
+    print(`python3 $LINE_COVERAGE_CALC_PATH $RAW_COVERAGE_XML $CURRENT_BUG_REPORT_DIR`);
     print("done! \n");
     exit(0);
 }
