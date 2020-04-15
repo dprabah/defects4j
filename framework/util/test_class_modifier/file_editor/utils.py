@@ -1,7 +1,7 @@
 def log_method_text():
     return ['',
             '\t//Added to trace test by exception using annotation',
-            '\tpublic static void logException(Exception e){',
+            '\tpublic static void logException(Object e){',
             '\t\t// do nothing',
             '\t}']
 
