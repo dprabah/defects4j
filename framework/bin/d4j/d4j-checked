@@ -106,7 +106,7 @@ if(defined $IS_EXPORT_SRC_CLASS){
         my $java_class_file = Utils::convert_filename_to_class_name($_, $props->{$PROP_DIR_SRC_CLASSES});
         append_given_content_to_file("$java_class_file\n", $EXPORT_SRC_CLASS_FILE_PATH);
     }
-    # `defects4j coverage -i $EXPORT_SRC_CLASS_FILE_PATH`;
+    `defects4j coverage -i $EXPORT_SRC_CLASS_FILE_PATH`;
     print(`python3 $LINE_COVERAGE_CALC_PATH $RAW_COVERAGE_XML $CURRENT_BUG_REPORT_DIR`);
     print("done! \n");
     exit(0);
