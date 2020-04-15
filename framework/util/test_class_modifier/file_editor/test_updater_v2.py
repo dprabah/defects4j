@@ -107,7 +107,7 @@ def process_catch_line(idx):
 
 
 def get_exception_variable(current_line):
-    line_as_array = current_line.replace(" )", ")").replace(" )", ")")
+    line_as_array = current_line.replace(" )", ")").replace(" )", ")").split("//")[0]
 
     res = max(idx for idx, val in enumerate(line_as_array.split(" "))
               if val.__contains__(')'))
@@ -135,14 +135,21 @@ def add_log_method():
     if log_necessary:
         for idx, line in enumerate(file_contents):
             if line.startswith("public class ") or \
-                    line.startswith("public abstract class ") or \
-                    line.startswith("public final class "):
-                if line.__contains__("{"):
-                    file_contents = file_contents[0:idx+1] + utils.log_method_text() + file_contents[idx+1:]
-                    break
-                else:
-                    file_contents = file_contents[0:idx + 2] + utils.log_method_text() + file_contents[idx + 2:]
-                    break
+                    line.__contains__("abstract class") or \
+                    line.startswith("public final class ") or\
+                    line.startswith("public static final class "):
+                idx_incrementer = 1
+                while not line.__contains__("{"):
+                    line = file_contents[idx + idx_incrementer]
+                    idx_incrementer = idx_incrementer + 1
+
+                file_contents = file_contents[0:idx+idx_incrementer] + utils.log_method_text() + file_contents[idx+idx_incrementer:]
+                # if line.__contains__("{"):
+                #     file_contents = file_contents[0:idx+1] + utils.log_method_text() + file_contents[idx+1:]
+                #     break
+                # else:
+                #     file_contents = file_contents[0:idx + 2] + utils.log_method_text() + file_contents[idx + 2:]
+                break
 
 
 def store_file():
