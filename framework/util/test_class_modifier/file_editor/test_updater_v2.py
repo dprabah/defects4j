@@ -134,7 +134,9 @@ def add_log_method():
     global file_contents
     if log_necessary:
         for idx, line in enumerate(file_contents):
-            if line.startswith("public class ") or line.startswith("public abstract class "):
+            if line.startswith("public class ") or \
+                    line.startswith("public abstract class ") or \
+                    line.startswith("public final class "):
                 if line.__contains__("{"):
                     file_contents = file_contents[0:idx+1] + utils.log_method_text() + file_contents[idx+1:]
                     break
