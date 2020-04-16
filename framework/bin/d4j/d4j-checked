@@ -99,7 +99,7 @@ my $total_number_of_tests = scalar @tests;
 my $total_number_of_tests_for_conv = $total_number_of_tests;
 
 if(defined $IS_EXPORT_SRC_CLASS){
-    print("Computing coverage report for all classes! \n");
+    print("Computing coverage report ");
     if (-f $EXPORT_SRC_CLASS_FILE_PATH) {
         open my $fh, '>', $EXPORT_SRC_CLASS_FILE_PATH;
         print $fh "";
@@ -109,7 +109,13 @@ if(defined $IS_EXPORT_SRC_CLASS){
         my $java_class_file = Utils::convert_filename_to_class_name($_, $props->{$PROP_DIR_SRC_CLASSES});
         append_given_content_to_file("$java_class_file\n", $EXPORT_SRC_CLASS_FILE_PATH);
     }
-    `defects4j coverage -i $EXPORT_SRC_CLASS_FILE_PATH`;
+    if(defined $EXECUTE_ALL) {
+        print("for all classes! \n");
+        print(`defects4j coverage -i $EXPORT_SRC_CLASS_FILE_PATH`);
+    }else{
+        print("for relevant classes! \n");
+        print(`defects4j coverage`);
+    }
     print(`python3 $LINE_COVERAGE_CALC_PATH $RAW_COVERAGE_XML $CURRENT_BUG_REPORT_DIR`);
     print("done! \n");
     exit(0);
