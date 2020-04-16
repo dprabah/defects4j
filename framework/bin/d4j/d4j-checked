@@ -29,11 +29,9 @@ use Digest::file qw(digest_file_hex);
 use File::Slurp;
 use Scalar::Util qw(looks_like_number);
 
-
 use Constants;
 use Utils;
 use Project;
-
 
 sub _usage {
     print (STDERR "usage: $0 -a action \n\n");
@@ -41,9 +39,10 @@ sub _usage {
 }
 
 my %cmd_opts;
-getopts('w:c:', \%cmd_opts) or _usage;
+getopts('a:w:c:', \%cmd_opts) or _usage;
 my $IS_EXPORT_SRC_CLASS = $cmd_opts{c};
-my $WORK_DIR    = Utils::get_abs_path($cmd_opts{w} // ".");
+my $EXECUTE_ALL = $cmd_opts{a};
+my $WORK_DIR = Utils::get_abs_path($cmd_opts{w} // ".");
 my $config = Utils::read_config_file("$WORK_DIR/$CONFIG");
 my $props = Utils::read_config_file("$WORK_DIR/$PROP_FILE");
 
@@ -84,7 +83,11 @@ $project->{prog_root} = $WORK_DIR;
 $project->_ant_call_comp("create.tracer.script");
 $project->_ant_call_comp("create.slicer.script");
 
-my @tests = Utils::get_all_classes($WORK_DIR, $props->{$PROP_DIR_SRC_TESTS});
+my @tests = Utils::get_relevant_classes($WORK_DIR, $props->{$PROP_DIR_SRC_TESTS});
+if(defined $EXECUTE_ALL){
+    @tests = Utils::get_all_classes($WORK_DIR, $props->{$PROP_DIR_SRC_TESTS});
+}
+
 my @src = Utils::get_all_classes($WORK_DIR, $props->{$PROP_DIR_SRC_CLASSES});
 my $checked_json = create_or_retrieve_coverage_file();
 my $current_completed_list = create_or_retrieve_current_completed_list();
@@ -115,13 +118,13 @@ if(defined $IS_EXPORT_SRC_CLASS){
 print("Total number of tests: $total_number_of_tests \n");
 print("Begin to modify assert by exception tests \n");
 foreach my $test (@tests) {
-    my $current_class_java_name = Utils::convert_filename_to_java_name($test, $props->{$PROP_DIR_SRC_TESTS});
-    my $current_conv_status = $current_completed_list->{$current_class_java_name}->{$CONST_IS_TEST_CONVERSION_DONE};
+    my $current_java_class_name = Utils::convert_filename_to_class_name($test, $props->{$PROP_DIR_SRC_TESTS});
+    my $current_conv_status = $current_completed_list->{$current_java_class_name}->{$CONST_IS_TEST_CONVERSION_DONE};
 
     if(not $current_conv_status eq $CONST_DONE){
         print("Test class modification done: $test \n");
         print(`python3 $TEST_MODIFIER_PATH $test`);
-        $current_completed_list->{$current_class_java_name}->{$CONST_IS_TEST_CONVERSION_DONE} = $CONST_DONE;
+        $current_completed_list->{$current_java_class_name}->{$CONST_IS_TEST_CONVERSION_DONE} = $CONST_DONE;
         store_current_completed_list();
     }else{
         print("Test class already modified: $test \n");
@@ -134,51 +137,51 @@ foreach my $test (@tests) {
     --$total_number_of_tests;
     $current_class_name = Utils::convert_filename_to_class_name($test, $props->{$PROP_DIR_SRC_TESTS});
     my $current_class_java_name = Utils::convert_filename_to_java_name($test, $props->{$PROP_DIR_SRC_TESTS});
-    my $current_hash = $current_completed_list->{$current_class_java_name} ->{$CONST_HASH_DIGEST};
-    my $previous_hash = $previous_completed_list->{$current_class_java_name}->{$CONST_HASH_DIGEST};
-    my $current_done = $current_completed_list->{$current_class_java_name}->{$CONST_IS_TESTING_DONE};
-
-       # if (index($test, 'StrBuilderTest.java') != -1) {
-    print("Remaining number of tests: $total_number_of_tests out of: $total_number_of_tests_for_conv ");
+    my $current_hash = $current_completed_list->{$current_class_name} ->{$CONST_HASH_DIGEST};
+    my $previous_hash = $previous_completed_list->{$current_class_name}->{$CONST_HASH_DIGEST};
+    my $current_done = $current_completed_list->{$current_class_name}->{$CONST_IS_TESTING_DONE};
     print("Current running test: $current_class_name \n");
+    # if (index($test, @relevant_tests) != -1) {
+        print("Remaining number of tests: $total_number_of_tests out of: $total_number_of_tests_for_conv ");
+        print("Current running test: $current_class_name \n");
 
-    if(!defined $previous_hash){
-        $previous_hash = "DUMMY_TEXT";
-    }
+        if(!defined $previous_hash){
+            $previous_hash = "DUMMY_TEXT";
+        }
 
-    # if($current_done eq $CONST_STARTED){
-    #     next;
-    # }
+        # if($current_done eq $CONST_STARTED){
+        #     next;
+        # }
 
-    if ($current_class_java_name ~~ @skipped_tests){
-        $current_completed_list->{$current_class_java_name}->{$CONST_IS_TESTING_DONE} = $CONST_SKIPPED;
+        if ($current_class_java_name ~~ @skipped_tests){
+            $current_completed_list->{$current_class_java_name}->{$CONST_IS_TESTING_DONE} = $CONST_SKIPPED;
+            store_current_completed_list();
+            next;
+        }
+
+        if($previous_hash eq $current_hash){
+            $current_completed_list->{$current_class_java_name}->{$CONST_IS_TESTING_DONE} = $CONST_SAME_HASH;
+            store_current_completed_list();
+            next;
+        }
+
+        if($current_done eq $CONST_DONE){
+            $current_completed_list->{$current_class_java_name}->{$CONST_IS_TESTING_DONE} = $CONST_DONE;
+            store_current_completed_list();
+            next;
+        }
+
+        $current_completed_list->{$current_class_java_name}->{$CONST_IS_TESTING_DONE} = $CONST_STARTED;
         store_current_completed_list();
-        next;
-    }
-
-    if($previous_hash eq $current_hash){
-        $current_completed_list->{$current_class_java_name}->{$CONST_IS_TESTING_DONE} = $CONST_SAME_HASH;
-        store_current_completed_list();
-        next;
-    }
-
-    if($current_done eq $CONST_DONE){
+        compute_checked_coverage($test);
         $current_completed_list->{$current_class_java_name}->{$CONST_IS_TESTING_DONE} = $CONST_DONE;
         store_current_completed_list();
-        next;
-    }
-
-    $current_completed_list->{$current_class_java_name}->{$CONST_IS_TESTING_DONE} = $CONST_STARTED;
-    store_current_completed_list();
-    compute_checked_coverage($test);
-    $current_completed_list->{$current_class_java_name}->{$CONST_IS_TESTING_DONE} = $CONST_DONE;
-    store_current_completed_list();
-    store_current_checked_coverage();
-    unlink("$CURRENT_BUG_REPORT_DIR/$current_class_name");
-    my $end = time();
-    my $time_took = scalar $end- scalar $start;
-    print("Time I took to finish computation: $time_took\n")
-   # }
+        store_current_checked_coverage();
+        unlink("$CURRENT_BUG_REPORT_DIR/$current_class_name");
+        my $end = time();
+        my $time_took = scalar $end - scalar $start;
+        print("Time I took to finish computation: $time_took\n");
+    # }
 }
 sub store_current_completed_list{
     open my $fh, '>', $CURRENT_BUG_TRACING_DONE_FILE;
@@ -214,21 +217,10 @@ sub compute_checked_coverage {
     my ($test) = @_;
     %assertions = Utils::get_assertion_line_numbers($test, @grep_assert_patterns);
     my $trace_file_path = "$CURRENT_BUG_REPORT_DIR/$current_class_name";
-    my $trace_file_slice_output_path = "$CURRENT_BUG_REPORT_DIR/$current_class_name.slice.output";
+
     trace();
-    slice($trace_file_path, $trace_file_slice_output_path);
-    foreach my $key (keys %{$checked_json}) {
-        my @lines = ();
-        #if (index($key, 'org.mockito.ArgumentCaptor') != -1) {
-        push(@lines, `cat $trace_file_slice_output_path | grep -F "$key."`);
-        my $tmp_line_number = $checked_json->{$key};
-        foreach (@lines) {
-            my $line_no = extract_line_number($_);
-            $tmp_line_number = join '', $line_no,',',$tmp_line_number;
-        }
-        $checked_json->{$key} = clean_duplicate($tmp_line_number);
-        #}
-    }
+    slice($trace_file_path);
+
 }
 
 # print(digest_file_hex($test, "SHA-512"));
@@ -238,7 +230,7 @@ sub create_or_retrieve_current_completed_list {
     }else{
         my $completed_list_json;
         foreach my $test_class (@tests) {
-            my $test_classname_java = Utils::convert_filename_to_java_name($test_class, $props->{$PROP_DIR_SRC_TESTS});
+            my $test_classname_java = Utils::convert_filename_to_class_name($test_class, $props->{$PROP_DIR_SRC_TESTS});
             $completed_list_json->{$test_classname_java}->{$CONST_HASH_DIGEST} = digest_file_hex($test_class, "SHA-512");
             $completed_list_json->{$test_classname_java}->{$CONST_IS_TESTING_DONE} = "";
             $completed_list_json->{$test_classname_java}->{$CONST_IS_TEST_CONVERSION_DONE} = "";
@@ -296,37 +288,65 @@ sub uniq {
 }
 
 sub slice {
-    my ($trace_file_path, $trace_file_slice_output_path) = @_;
-    my $trace_parameters = generate_trace_param();
+    my ($trace_file_path) = @_;
+    while (1){
+        my $trace_parameters = generate_trace_param();
+        if (scalar (keys %{$trace_parameters}) == 0){
+            last;
+        }
+        my $assertion = (keys %{$trace_parameters})[0];
+        my $dir_const = "_dir";
+        my $trace_file_slice_output_dir = "$CURRENT_BUG_REPORT_DIR/$current_class_name$dir_const";
+        my $trace_file_slice_output_path =  "$trace_file_slice_output_dir/$assertion.slice.output";
+        if (! -d $trace_file_slice_output_dir) {print(`mkdir $trace_file_slice_output_dir`);}
+        $project->_ant_call_comp("run.slicer.script -DtraceParameters=$trace_parameters->{$assertion} -DtraceFile=$trace_file_path -DsliceOutput=$trace_file_slice_output_path" );
 
-    $project->_ant_call_comp("run.slicer.script -DtraceParameters=$trace_parameters -DtraceFile=$trace_file_path ");
-    my @ignorable_tests = ();
-    my @removables = ();
-    # push(@ignorable_tests, `cat $trace_file_slice_output_path | grep error_method_name`);
-    push(@ignorable_tests, `cat $trace_file_slice_output_path | grep Error.parsing.slicing.criterion`);
-    if(@ignorable_tests){
-        @removables = ();
-        foreach(@ignorable_tests){
-            my $removable_str = (split /:/, $_)[-1];
-            if (Utils::trim($removable_str) eq '') {
-                $removable_str = (split /:/, $_)[1];
-            }
-            if(looks_like_number($removable_str)){
-                push(@removables, int($removable_str));
-                foreach(@removables) {
-                    remove_assertion(int($_));
-                    slice($trace_file_path, $trace_file_slice_output_path);
+        my @ignorable_tests = ();
+        my @removables = ();
+        # push(@ignorable_tests, `cat $trace_file_slice_output_path | grep error_method_name`);
+        push(@ignorable_tests, `cat $trace_file_slice_output_path | grep Error.parsing.slicing.criterion`);
+        if(@ignorable_tests){
+            @removables = ();
+            foreach(@ignorable_tests){
+                my $removable_str = (split /:/, $_)[-1];
+                if (Utils::trim($removable_str) eq '') {
+                    $removable_str = (split /:/, $_)[1];
                 }
-            }else{
-                print("came to remove assertion: $removable_str\n");
-                delete($assertions{Utils::trim($removable_str)});
-                slice($trace_file_path, $trace_file_slice_output_path);
+                if(looks_like_number($removable_str)){
+                    push(@removables, int($removable_str));
+                    foreach(@removables) {
+                        remove_assertion(int($_));
+                        slice($trace_file_path);
+                    }
+                }else{
+                    print("came to remove assertion: $removable_str\n");
+                    delete($assertions{Utils::trim($removable_str)});
+                    slice($trace_file_path);
+                }
             }
         }
-        # foreach(@removables) {
-        #     remove_assertion(int($_));
-        #     slice($trace_file_path, $trace_file_slice_output_path);
-        # }
+        save_coverage_score($trace_file_slice_output_path, $assertion);
+        delete($assertions{Utils::trim($assertion)});
+        $trace_parameters = generate_trace_param();
+    }
+}
+
+sub save_coverage_score {
+    my ($trace_file_slice_output_path, $assertion) = @_;
+    foreach my $key (keys %{$checked_json}) {
+        my @lines = ();
+        #if (index($key, 'org.mockito.ArgumentCaptor') != -1) {
+        push(@lines, `cat $trace_file_slice_output_path | grep -F "$key."`);
+        my @tmp_line_number = ();
+        foreach (@lines) {
+            push @tmp_line_number, extract_line_number($_);
+        }
+        my $const_open_brac = "[";
+        if(not scalar @tmp_line_number == 0){
+            my $comma_separated_array = join(",", uniq(@tmp_line_number));
+            $checked_json->{$key} = join '', "$assertion$const_open_brac$comma_separated_array], $checked_json->{$key}";
+        }
+        #}
     }
 }
 
@@ -346,17 +366,23 @@ sub extract_line_number{
 
 sub generate_trace_param(){
     my @params = ();
+    my $params_update;
     my @assertion_as_list = ();
     foreach my $assertion (keys %assertions) {
         if(rindex $assertion, '@Ignore', 0 != -1){
             @assertion_as_list = @{$assertions{$assertion}};
             #$assertion = substr($assertion, 0, -2);
             for (@assertion_as_list) {
+                my $tmp_all_value = "";
                 push(@params, "$current_class_name.$assertion:$_:*");
+                if (defined $params_update->{$assertion}){
+                    $tmp_all_value = "$params_update->{$assertion},"
+                }
+                $params_update->{$assertion} = $tmp_all_value . "$current_class_name.$assertion:$_:*";
             }
         }
     }
-    return join(',', @params);
+    return $params_update;
 }
 
 sub remove_assertion {
