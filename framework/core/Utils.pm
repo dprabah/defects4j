@@ -488,6 +488,16 @@ sub convert_filename_to_java_name {
     return convert_classfile_name_to_java_name(convert_filename_to_class_name($file_name, $tests_dir_path));
 }
 
+sub get_relevant_classes{
+    my ($root_dir, $tests_dir_path) = @_;
+    push my @relevant_tests, `defects4j export -p tests.relevant`;
+    my @relevant_tests_as_file_path;
+    foreach(@relevant_tests){
+        push @relevant_tests_as_file_path, "$root_dir/$tests_dir_path/". replace("\n","", replace("\\.","/", $_)) . ".java";
+    }
+    return @relevant_tests_as_file_path;
+}
+
 sub get_all_classes {
     # @_ >= 2 or die $ARG_ERROR;
     my ($root_dir, $tests_dir_path) = @_;

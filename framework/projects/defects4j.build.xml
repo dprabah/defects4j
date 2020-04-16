@@ -416,8 +416,9 @@ project-specific build file ("project_id"/"project_id".build.xml) for the
     <target name="run.slicer.script">
         <property name="traceParameters" value="default-module" />
         <property name="traceFile" value="default-module" />
+        <property name="sliceOutput" value="default-module" />
 
-        <exec executable="/bin/bash" output="${traceFile}.slice.output">
+        <exec executable="/bin/bash" output="${sliceOutput}">
             <arg value="${d4j.home}/framework/projects/lib/slice.sh"/>
             <arg value="-p${traceParameters}"/>
             <arg value="-t${traceFile}"/>
