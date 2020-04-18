@@ -40,7 +40,7 @@ sub _usage {
 
 my %cmd_opts;
 getopts('a:w:c:', \%cmd_opts) or _usage;
-my $IS_EXPORT_SRC_CLASS = $cmd_opts{c};
+my $IS_COMPUTE_COVERAGE_REPORT = $cmd_opts{c};
 my $EXECUTE_ALL = $cmd_opts{a};
 my $WORK_DIR = Utils::get_abs_path($cmd_opts{w} // ".");
 my $config = Utils::read_config_file("$WORK_DIR/$CONFIG");
@@ -53,12 +53,16 @@ unless(defined $config and defined $props){
 
 my @grep_assert_patterns = ('assert.*(.*);', 'verify(.*);', 'logException(.*);');
 my $CURRENT_BUG_TRACE_FILE_DIR = "$PROJECTS_DIR/$config->{$CONFIG_PID}/trace_files";
+my $ALL_TEST_METHODS = "$CURRENT_BUG_TRACE_FILE_DIR/all_test_methods";
+my $ALL_TESTS_FILE = "$WORK_DIR/$FILE_ALL_TESTS";
 my $CURRENT_BUG_REPORT_DIR = "$CURRENT_BUG_TRACE_FILE_DIR/$config->{$CONFIG_VID}";
 my $CURRENT_BUG_REPORT_FILE = "$CURRENT_BUG_REPORT_DIR/checked_coverage_report.json";
+my $CHECKED_COVERAGE = "$CURRENT_BUG_REPORT_DIR/checked_coverage.json";
 my $CURRENT_BUG_SKIP_ABLE_FILE = "$CURRENT_BUG_TRACE_FILE_DIR/skip_files.json";
 my $CURRENT_BUG_TRACING_DONE_FILE = "$CURRENT_BUG_REPORT_DIR/tracing_completed.json";
 my $TEST_MODIFIER_PATH = "$UTIL_DIR/test_class_modifier/app.py";
 my $LINE_COVERAGE_CALC_PATH = "$UTIL_DIR/test_class_modifier/compute_statement_coverage.py";
+my $UPDATE_CHECKED_JSON_SCRIPT_PATH = "$UTIL_DIR/test_class_modifier/update_checked_json.py";
 my $EXPORT_SRC_CLASS_FILE_PATH = "$WORK_DIR/all_classes";
 my $RAW_COVERAGE_XML = "$WORK_DIR/coverage.xml";
 $config->{$CONFIG_VID} =~ /(\d+)/;
@@ -98,8 +102,7 @@ my $current_class_name;
 my $total_number_of_tests = scalar @tests;
 my $total_number_of_tests_for_conv = $total_number_of_tests;
 
-if(defined $IS_EXPORT_SRC_CLASS){
-    print("Computing coverage report ");
+if(defined $IS_COMPUTE_COVERAGE_REPORT){
     if (-f $EXPORT_SRC_CLASS_FILE_PATH) {
         open my $fh, '>', $EXPORT_SRC_CLASS_FILE_PATH;
         print $fh "";
@@ -109,17 +112,45 @@ if(defined $IS_EXPORT_SRC_CLASS){
         my $java_class_file = Utils::convert_filename_to_class_name($_, $props->{$PROP_DIR_SRC_CLASSES});
         append_given_content_to_file("$java_class_file\n", $EXPORT_SRC_CLASS_FILE_PATH);
     }
-    if(defined $EXECUTE_ALL) {
-        print("for all classes! \n");
-        print(`defects4j coverage -i $EXPORT_SRC_CLASS_FILE_PATH`);
-    }else{
-        print("for relevant classes! \n");
-        print(`defects4j coverage`);
+
+    print(`defects4j coverage`);
+    print(`mv $ALL_TESTS_FILE $ALL_TEST_METHODS`);
+
+    foreach(@tests){
+        my $test_class = Utils::convert_filename_to_class_name($_, $props->{$PROP_DIR_SRC_TESTS});
+        my @test_methods = `cat $ALL_TEST_METHODS | grep $test_class`;
+        foreach(@test_methods){
+            my $current_test_method = Utils::convert_formatter_output_to_test_method($_);
+            # TODO: check whether -i is required?
+            print(`defects4j coverage -i $EXPORT_SRC_CLASS_FILE_PATH -t $current_test_method`);
+            print(`python3 $LINE_COVERAGE_CALC_PATH $RAW_COVERAGE_XML $CURRENT_BUG_REPORT_DIR $current_test_method`);
+        }
     }
-    print(`python3 $LINE_COVERAGE_CALC_PATH $RAW_COVERAGE_XML $CURRENT_BUG_REPORT_DIR`);
-    print("done! \n");
-    exit(0);
+exit(0);
 }
+
+# if(defined $IS_EXPORT_SRC_CLASS){
+#     print("Computing coverage report ");
+#     if (-f $EXPORT_SRC_CLASS_FILE_PATH) {
+#         open my $fh, '>', $EXPORT_SRC_CLASS_FILE_PATH;
+#         print $fh "";
+#         close($fh);
+#     }
+#     foreach (@src) {
+#         my $java_class_file = Utils::convert_filename_to_class_name($_, $props->{$PROP_DIR_SRC_CLASSES});
+#         append_given_content_to_file("$java_class_file\n", $EXPORT_SRC_CLASS_FILE_PATH);
+#     }
+#     if(defined $EXECUTE_ALL) {
+#         print("for all classes! \n");
+#         print(`defects4j coverage -i $EXPORT_SRC_CLASS_FILE_PATH`);
+#     }else{
+#         print("for relevant classes! \n");
+#         print(`defects4j coverage`);
+#     }
+#     print(`python3 $LINE_COVERAGE_CALC_PATH $RAW_COVERAGE_XML $CURRENT_BUG_REPORT_DIR`);
+#     print("done! \n");
+#     exit(0);
+# }
 
 print("Total number of tests: $total_number_of_tests \n");
 print("Begin to modify assert by exception tests \n");
@@ -146,7 +177,6 @@ foreach my $test (@tests) {
     my $current_hash = $current_completed_list->{$current_class_name} ->{$CONST_HASH_DIGEST};
     my $previous_hash = $previous_completed_list->{$current_class_name}->{$CONST_HASH_DIGEST};
     my $current_done = $current_completed_list->{$current_class_name}->{$CONST_IS_TESTING_DONE};
-    print("Current running test: $current_class_name \n");
     # if (index($test, @relevant_tests) != -1) {
         print("Remaining number of tests: $total_number_of_tests out of: $total_number_of_tests_for_conv ");
         print("Current running test: $current_class_name \n");
@@ -189,6 +219,9 @@ foreach my $test (@tests) {
         print("Time I took to finish computation: $time_took\n");
     # }
 }
+
+print(`python3 $UPDATE_CHECKED_JSON_SCRIPT_PATH $CHECKED_COVERAGE`);
+
 sub store_current_completed_list{
     open my $fh, '>', $CURRENT_BUG_TRACING_DONE_FILE;
     print $fh encode_json($current_completed_list);
@@ -339,6 +372,7 @@ sub slice {
 
 sub save_coverage_score {
     my ($trace_file_slice_output_path, $assertion) = @_;
+    my $tmp_current_class_name = "$current_class_name"."::";
     foreach my $key (keys %{$checked_json}) {
         my @lines = ();
         #if (index($key, 'org.mockito.ArgumentCaptor') != -1) {
@@ -350,7 +384,7 @@ sub save_coverage_score {
         my $const_open_brac = "[";
         if(not scalar @tmp_line_number == 0){
             my $comma_separated_array = join(",", uniq(@tmp_line_number));
-            $checked_json->{$key} = join '', "$assertion$const_open_brac$comma_separated_array], $checked_json->{$key}";
+            $checked_json->{$key} = join '', "$tmp_current_class_name$assertion$const_open_brac$comma_separated_array], $checked_json->{$key}";
         }
         #}
     }

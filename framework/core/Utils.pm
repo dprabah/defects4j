@@ -465,6 +465,13 @@ sub get_all_test_suites {
 }
 
 
+sub convert_formatter_output_to_test_method {
+    # @_ >= 2 or die $ARG_ERROR;
+    my ($file_name) = @_;
+    $file_name = replace("\\n", "", $file_name );
+    return replace("\\)", "", (split /\(/, $file_name)[1])."::".(split /\(/, $file_name)[0];
+}
+
 sub convert_filename_to_class_name {
     # @_ >= 2 or die $ARG_ERROR;
     my ($file_name, $tests_dir_path) = @_;
