@@ -17,12 +17,12 @@ do
     if [ -d "$dir_name" ]; then
       echo "dir seems to be exist already"
       cd $dir_name
-      defects4j checked
+      defects4j checked -b both
     else
       echo "dir not found, creating"
       mkdir -p $dir_name
       defects4j checkout -p $bug_code -v $bug_id -w $dir_name
       cd $dir_name
-      defects4j checked
+      defects4j checked -b both
     fi
 done
