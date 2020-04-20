@@ -2,7 +2,7 @@ import json
 import os.path
 
 
-def read_format_file(file_path):
+def read_format_file(file_path, to_save):
     output = {}
     final_output = {}
     if os.path.exists(file_path):
@@ -21,5 +21,5 @@ def read_format_file(file_path):
         if current_dict.__len__() > 0:
             final_output[class_value] = current_dict
 
-    with open(file_path, 'w') as fp:
+    with open(to_save, 'w') as fp:
         json.dump(final_output, fp)

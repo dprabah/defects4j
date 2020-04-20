@@ -51,7 +51,7 @@ unless(defined $config and defined $props){
     exit 1;
 }
 
-my @grep_assert_patterns = ('assert.*(.*);', 'verify(.*);', 'logException(.*);');
+my @grep_assert_patterns = ('assert.*(*', 'verify.*(*', 'logException(.*);');
 my $CURRENT_BUG_TRACE_FILE_DIR = "$PROJECTS_DIR/$config->{$CONFIG_PID}/trace_files";
 my $ALL_TEST_METHODS = "$CURRENT_BUG_TRACE_FILE_DIR/all_test_methods";
 my $ALL_TESTS_FILE = "$WORK_DIR/$FILE_ALL_TESTS";
@@ -61,6 +61,7 @@ my $CHECKED_COVERAGE = "$CURRENT_BUG_REPORT_DIR/checked_coverage.json";
 my $CURRENT_BUG_SKIP_ABLE_FILE = "$CURRENT_BUG_TRACE_FILE_DIR/skip_files.json";
 my $CURRENT_BUG_TRACING_DONE_FILE = "$CURRENT_BUG_REPORT_DIR/tracing_completed.json";
 my $TEST_MODIFIER_PATH = "$UTIL_DIR/test_class_modifier/app.py";
+my $TEST_ASSERT_LINE_MODIFIER = "$UTIL_DIR/test_class_modifier/assert_line_modifier.py";
 my $LINE_COVERAGE_CALC_PATH = "$UTIL_DIR/test_class_modifier/compute_statement_coverage.py";
 my $UPDATE_CHECKED_JSON_SCRIPT_PATH = "$UTIL_DIR/test_class_modifier/update_checked_json.py";
 my $EXPORT_SRC_CLASS_FILE_PATH = "$WORK_DIR/all_classes";
@@ -122,6 +123,7 @@ if(defined $IS_COMPUTE_COVERAGE_REPORT){
         foreach(@test_methods){
             my $current_test_method = Utils::convert_formatter_output_to_test_method($_);
             # TODO: check whether -i is required?
+            print(unlink($RAW_COVERAGE_XML));
             print(`defects4j coverage -i $EXPORT_SRC_CLASS_FILE_PATH -t $current_test_method`);
             print(`python3 $LINE_COVERAGE_CALC_PATH $RAW_COVERAGE_XML $CURRENT_BUG_REPORT_DIR $current_test_method`);
         }
@@ -161,6 +163,7 @@ foreach my $test (@tests) {
     if(not $current_conv_status eq $CONST_DONE){
         print("Test class modification done: $test \n");
         print(`python3 $TEST_MODIFIER_PATH $test`);
+        # print(`python3 $TEST_ASSERT_LINE_MODIFIER $test`);
         $current_completed_list->{$current_java_class_name}->{$CONST_IS_TEST_CONVERSION_DONE} = $CONST_DONE;
         store_current_completed_list();
     }else{
@@ -220,7 +223,7 @@ foreach my $test (@tests) {
     # }
 }
 
-print(`python3 $UPDATE_CHECKED_JSON_SCRIPT_PATH $CHECKED_COVERAGE`);
+print(`python3 $UPDATE_CHECKED_JSON_SCRIPT_PATH $CURRENT_BUG_REPORT_FILE $CHECKED_COVERAGE`);
 
 sub store_current_completed_list{
     open my $fh, '>', $CURRENT_BUG_TRACING_DONE_FILE;
@@ -258,8 +261,8 @@ sub compute_checked_coverage {
     my $trace_file_path = "$CURRENT_BUG_REPORT_DIR/$current_class_name";
 
     trace();
-    slice($trace_file_path);
-
+    my $private_assertions = get_and_erase_private_params();
+    slice($trace_file_path, $private_assertions);
 }
 
 # print(digest_file_hex($test, "SHA-512"));
@@ -293,9 +296,11 @@ sub create_or_retrieve_previous_completed_list{
 sub create_or_retrieve_coverage_file {
     if (-f $CURRENT_BUG_REPORT_FILE) {
         return decode_json(read_file($CURRENT_BUG_REPORT_FILE));
-    } elsif (-f $PREVIOUS_BUG_REPORT_FILE){
-        return decode_json(read_file($PREVIOUS_BUG_REPORT_FILE));
-    } else {
+    }
+    # elsif (-f $PREVIOUS_BUG_REPORT_FILE){
+    #     return decode_json(read_file($PREVIOUS_BUG_REPORT_FILE));
+    # }
+    else {
         `mkdir -p $CURRENT_BUG_REPORT_DIR`;
         open my $fh, '>', $CURRENT_BUG_REPORT_FILE;
         foreach my $class (@src) {
@@ -327,7 +332,8 @@ sub uniq {
 }
 
 sub slice {
-    my ($trace_file_path) = @_;
+    my ($trace_file_path, $private_assertions) = @_;
+
     while (1){
         my $trace_parameters = generate_trace_param();
         if (scalar (keys %{$trace_parameters}) == 0){
@@ -338,7 +344,8 @@ sub slice {
         my $trace_file_slice_output_dir = "$CURRENT_BUG_REPORT_DIR/$current_class_name$dir_const";
         my $trace_file_slice_output_path =  "$trace_file_slice_output_dir/$assertion.slice.output";
         if (! -d $trace_file_slice_output_dir) {print(`mkdir $trace_file_slice_output_dir`);}
-        $project->_ant_call_comp("run.slicer.script -DtraceParameters=$trace_parameters->{$assertion} -DtraceFile=$trace_file_path -DsliceOutput=$trace_file_slice_output_path" );
+        my $trace_parameters_to_trace = "$trace_parameters->{$assertion}";
+        $project->_ant_call_comp("run.slicer.script -DtraceParameters=$trace_parameters_to_trace -DtraceFile=$trace_file_path -DsliceOutput=$trace_file_slice_output_path");
 
         my @ignorable_tests = ();
         my @removables = ();
@@ -355,18 +362,34 @@ sub slice {
                     push(@removables, int($removable_str));
                     foreach(@removables) {
                         remove_assertion(int($_));
-                        slice($trace_file_path);
+                        slice($trace_file_path, $private_assertions);
                     }
                 }else{
                     print("came to remove assertion: $removable_str\n");
                     delete($assertions{Utils::trim($removable_str)});
-                    slice($trace_file_path);
+                    slice($trace_file_path, $private_assertions);
                 }
             }
         }
         save_coverage_score($trace_file_slice_output_path, $assertion);
         delete($assertions{Utils::trim($assertion)});
         $trace_parameters = generate_trace_param();
+    }
+}
+
+sub get_and_erase_private_params {
+    my $trace_parameters = generate_trace_param();
+    my $private_assertions = "";
+    foreach my $key (keys %{$trace_parameters}) {
+        if (not index($key,"::privateMethod") == -1) {
+            $private_assertions = join '',$trace_parameters->{$key}, $private_assertions;
+            delete($assertions{Utils::trim($key)});
+        }
+    }
+    if (not $private_assertions eq ""){
+        return ",$private_assertions";
+    }else{
+        return "";
     }
 }
 
@@ -405,7 +428,7 @@ sub extract_line_number{
 }
 
 sub generate_trace_param(){
-    my @params = ();
+    # my @params = ();
     my $params_update;
     my @assertion_as_list = ();
     foreach my $assertion (keys %assertions) {
@@ -414,11 +437,12 @@ sub generate_trace_param(){
             #$assertion = substr($assertion, 0, -2);
             for (@assertion_as_list) {
                 my $tmp_all_value = "";
-                push(@params, "$current_class_name.$assertion:$_:*");
+                #push(@params, "$current_class_name.$assertion:$_:*");
                 if (defined $params_update->{$assertion}){
                     $tmp_all_value = "$params_update->{$assertion},"
                 }
-                $params_update->{$assertion} = $tmp_all_value . "$current_class_name.$assertion:$_:*";
+                my $remove_private_mention = (split/::/,$assertion)[0];
+                $params_update->{$assertion} = $tmp_all_value . "$current_class_name.$remove_private_mention:$_:*";
             }
         }
     }

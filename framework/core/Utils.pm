@@ -541,8 +541,7 @@ sub get_assertion_line_numbers {
     # push(@proper_tests, `grep -nr -A1 '\@Test' $class_path | grep 'public void' `);
     # push(@proper_tests, `grep -nr -A1 '\@After' $class_path | grep 'public void' `);
     # push(@proper_tests, `grep -nr -A1 '\@Before' $class_path | grep 'public void' `);
-    push(@proper_tests, `grep -nr 'public void' $class_path`);
-    # push(@proper_tests, `grep -nr 'private void' $class_path`);
+    push(@proper_tests, `grep -nr 'p.* void' $class_path`);
 
     foreach my $grep (@expected_assertion_list) {
         push(@assert_methods, `grep -nr '$grep' $class_path`);
@@ -569,9 +568,10 @@ sub get_assertion_line_numbers {
         push(my @is_ignored, grep(/\@Ignore/ ,$tmp_result{$key}));
         if(scalar @grep_result > 0){
             my $start_index = index($tmp_result{$key}, ' void') + 6;
+            my $private_method = "";
+            if (not index($tmp_result{$key},"private") == -1) {$private_method = "::privateMethod"}
             my $tmp = substr($tmp_result{$key}, $start_index);
-
-            $method_name = trim((split /\(/, $tmp)[0]);
+            $method_name = trim((split /\(/, $tmp)[0]).$private_method;
             if(scalar @is_ignored > 0){
                 # push @{$result{"\@Ignore $method_name"}}, $key;
                 $method_name = "\@Ignore $method_name"
