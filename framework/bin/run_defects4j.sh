@@ -23,7 +23,6 @@ do
       mkdir -p $dir_name
       defects4j checkout -p $bug_code -v $bug_id -w $dir_name
       cd $dir_name
-      pwd
       defects4j checked
     fi
 done

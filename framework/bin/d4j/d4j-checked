@@ -39,9 +39,10 @@ sub _usage {
 }
 
 my %cmd_opts;
-getopts('a:w:c:', \%cmd_opts) or _usage;
+getopts('a:b:c:w:', \%cmd_opts) or _usage;
 my $IS_COMPUTE_COVERAGE_REPORT = $cmd_opts{c};
 my $EXECUTE_ALL = $cmd_opts{a};
+my $EXECUTE_BOTH = $cmd_opts{b};
 my $WORK_DIR = Utils::get_abs_path($cmd_opts{w} // ".");
 my $config = Utils::read_config_file("$WORK_DIR/$CONFIG");
 my $props = Utils::read_config_file("$WORK_DIR/$PROP_FILE");
@@ -52,6 +53,8 @@ unless(defined $config and defined $props){
 }
 
 my @grep_assert_patterns = ('assert.*(*', 'verify.*(*', 'logException(.*);');
+my @ignorable_strings = ('try', 'return');
+my $ignorable_strings = join ",", @ignorable_strings;
 my $CURRENT_BUG_TRACE_FILE_DIR = "$PROJECTS_DIR/$config->{$CONFIG_PID}/trace_files";
 my $ALL_TEST_METHODS = "$CURRENT_BUG_TRACE_FILE_DIR/all_test_methods";
 my $ALL_TESTS_FILE = "$WORK_DIR/$FILE_ALL_TESTS";
@@ -103,7 +106,8 @@ my $current_class_name;
 my $total_number_of_tests = scalar @tests;
 my $total_number_of_tests_for_conv = $total_number_of_tests;
 
-if(defined $IS_COMPUTE_COVERAGE_REPORT){
+if(defined $EXECUTE_BOTH or defined $IS_COMPUTE_COVERAGE_REPORT){
+    print("Starting to compute statement coverage \n");
     if (-f $EXPORT_SRC_CLASS_FILE_PATH) {
         open my $fh, '>', $EXPORT_SRC_CLASS_FILE_PATH;
         print $fh "";
@@ -123,12 +127,16 @@ if(defined $IS_COMPUTE_COVERAGE_REPORT){
         foreach(@test_methods){
             my $current_test_method = Utils::convert_formatter_output_to_test_method($_);
             # TODO: check whether -i is required?
-            print(unlink($RAW_COVERAGE_XML));
-            print(`defects4j coverage -i $EXPORT_SRC_CLASS_FILE_PATH -t $current_test_method`);
-            print(`python3 $LINE_COVERAGE_CALC_PATH $RAW_COVERAGE_XML $CURRENT_BUG_REPORT_DIR $current_test_method`);
+            unlink($RAW_COVERAGE_XML);
+            print("computing coverage for test method = $current_test_method \n");
+            `defects4j coverage -i $EXPORT_SRC_CLASS_FILE_PATH -t $current_test_method`;
+            print(`python3 $LINE_COVERAGE_CALC_PATH $RAW_COVERAGE_XML $CURRENT_BUG_REPORT_DIR $current_test_method $ignorable_strings 'ignore_line_details'`);
         }
     }
-exit(0);
+    print(`python3 $LINE_COVERAGE_CALC_PATH $RAW_COVERAGE_XML $CURRENT_BUG_REPORT_DIR $WORK_DIR/$props->{$PROP_DIR_SRC_CLASSES} $ignorable_strings 'line_details'`);
+    if (not defined $EXECUTE_BOTH){
+        exit(0);
+    }
 }
 
 # if(defined $IS_EXPORT_SRC_CLASS){
@@ -153,7 +161,7 @@ exit(0);
 #     print("done! \n");
 #     exit(0);
 # }
-
+print("Starting to compute checked coverage \n");
 print("Total number of tests: $total_number_of_tests \n");
 print("Begin to modify assert by exception tests \n");
 foreach my $test (@tests) {
