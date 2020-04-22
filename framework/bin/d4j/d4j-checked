@@ -56,9 +56,9 @@ my @grep_assert_patterns = ('assert.*(*', 'verify.*(*', 'logException(.*);');
 my @ignorable_strings = ('try', 'return');
 my $ignorable_strings = join ",", @ignorable_strings;
 my $CURRENT_BUG_TRACE_FILE_DIR = "$PROJECTS_DIR/$config->{$CONFIG_PID}/trace_files";
-my $ALL_TEST_METHODS = "$CURRENT_BUG_TRACE_FILE_DIR/all_test_methods";
 my $ALL_TESTS_FILE = "$WORK_DIR/$FILE_ALL_TESTS";
 my $CURRENT_BUG_REPORT_DIR = "$CURRENT_BUG_TRACE_FILE_DIR/$config->{$CONFIG_VID}";
+my $ALL_TEST_METHODS = "$CURRENT_BUG_REPORT_DIR/all_test_methods";
 my $CURRENT_BUG_REPORT_FILE = "$CURRENT_BUG_REPORT_DIR/checked_coverage_report.json";
 my $CHECKED_COVERAGE = "$CURRENT_BUG_REPORT_DIR/checked_coverage.json";
 my $CURRENT_BUG_SKIP_ABLE_FILE = "$CURRENT_BUG_TRACE_FILE_DIR/skip_files.json";
@@ -87,10 +87,6 @@ my $CONST_SAME_HASH = "SAME_HASH";
 my $project = Project::create_project($config->{$CONFIG_PID});
 $project->{prog_root} = $WORK_DIR;
 
-# Creates a script file, trace.sh in home dir, to generate trace for the provided class.
-$project->_ant_call_comp("create.tracer.script");
-$project->_ant_call_comp("create.slicer.script");
-
 my @tests = Utils::get_relevant_classes($WORK_DIR, $props->{$PROP_DIR_SRC_TESTS});
 if(defined $EXECUTE_ALL){
     @tests = Utils::get_all_classes($WORK_DIR, $props->{$PROP_DIR_SRC_TESTS});
@@ -118,7 +114,7 @@ if(defined $EXECUTE_BOTH or defined $IS_COMPUTE_COVERAGE_REPORT){
         append_given_content_to_file("$java_class_file\n", $EXPORT_SRC_CLASS_FILE_PATH);
     }
 
-    print(`defects4j coverage`);
+    print(`defects4j coverage`); # All tests are ran, but instruments only relevant tests.
     print(`mv $ALL_TESTS_FILE $ALL_TEST_METHODS`);
 
     foreach(@tests){
@@ -126,11 +122,11 @@ if(defined $EXECUTE_BOTH or defined $IS_COMPUTE_COVERAGE_REPORT){
         my @test_methods = `cat $ALL_TEST_METHODS | grep $test_class`;
         foreach(@test_methods){
             my $current_test_method = Utils::convert_formatter_output_to_test_method($_);
-            # TODO: check whether -i is required?
-            unlink($RAW_COVERAGE_XML);
-            print("computing coverage for test method = $current_test_method \n");
-            `defects4j coverage -i $EXPORT_SRC_CLASS_FILE_PATH -t $current_test_method`;
-            print(`python3 $LINE_COVERAGE_CALC_PATH $RAW_COVERAGE_XML $CURRENT_BUG_REPORT_DIR $current_test_method $ignorable_strings 'ignore_line_details'`);
+            print($current_test_method);
+                unlink($RAW_COVERAGE_XML);
+                print("computing coverage for test method = $current_test_method \n");
+                `defects4j coverage -i $EXPORT_SRC_CLASS_FILE_PATH -t $current_test_method`;
+                print(`python3 $LINE_COVERAGE_CALC_PATH $RAW_COVERAGE_XML $CURRENT_BUG_REPORT_DIR $current_test_method $ignorable_strings 'ignore_line_details'`);
         }
     }
     print(`python3 $LINE_COVERAGE_CALC_PATH $RAW_COVERAGE_XML $CURRENT_BUG_REPORT_DIR $WORK_DIR/$props->{$PROP_DIR_SRC_CLASSES} $ignorable_strings 'line_details'`);
@@ -162,6 +158,10 @@ if(defined $EXECUTE_BOTH or defined $IS_COMPUTE_COVERAGE_REPORT){
 #     exit(0);
 # }
 print("Starting to compute checked coverage \n");
+# Creates a script file, trace.sh in home dir, to generate trace for the provided class.
+$project->_ant_call_comp("create.tracer.script");
+$project->_ant_call_comp("create.slicer.script");
+
 print("Total number of tests: $total_number_of_tests \n");
 print("Begin to modify assert by exception tests \n");
 foreach my $test (@tests) {

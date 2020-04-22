@@ -14,16 +14,15 @@ def compute(xml_file_path, json_store_path, executed_method):
     if path.exists(readable_file_path):
         with open(readable_file_path) as fp:
             output = json.load(fp)
-
+    numbers = {}
     for current_class in classes:
         class_name = current_class.attributes['name'].value
         methods = current_class.getElementsByTagName('method')
-        numbers = {}
+        line_nr = []
         for current_method in methods:
             # method_name = current_method.attributes['name'].value
             method_name = str(executed_method)
             lines = current_method.getElementsByTagName('line')
-            line_nr = []
             for line in lines:
                 if int(line.attributes['hits'].value) > 0:
                     line_nr.append(int(line.attributes['number'].value))
@@ -88,4 +87,3 @@ def read_file():
         f = open(file_path, encoding="ISO-8859-1")
         file_contents = f.read().splitlines()
         f.close()
-
