@@ -353,6 +353,8 @@ sub slice {
         my $trace_file_slice_output_path =  "$trace_file_slice_output_dir/$assertion.slice.output";
         if (! -d $trace_file_slice_output_dir) {print(`mkdir $trace_file_slice_output_dir`);}
         my $trace_parameters_to_trace = "$trace_parameters->{$assertion}";
+        print("slicing for assertion method: $assertion\n");
+
         $project->_ant_call_comp("run.slicer.script -DtraceParameters=$trace_parameters_to_trace -DtraceFile=$trace_file_path -DsliceOutput=$trace_file_slice_output_path");
 
         my @ignorable_tests = ();
