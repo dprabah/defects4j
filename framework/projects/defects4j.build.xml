@@ -462,9 +462,14 @@ java -Xmx12g -jar ${slicer} -p "$parameterA" "$parameterC"
         </echo>
     </target>
 
+    <path id="classpathProperties">
+        <path refid="d4j.test.classpath"/>
+        <pathelement location="${d4j.home}/framework/lib/junit_runner/JunitRunnerForDefects4J.jar" />
+    </path>
+
     <target name="create.tracer.script" description="Creates a script file in home dir, to trace the given class file" >
-        <pathconvert property="classpathProp" refid="d4j.test.classpath"/>
-        <pathconvert property="manual_tests" refid="all.manual.tests"/>
+        <pathconvert property="classpathProp" refid="classpathProperties"/>
+        <!--<pathconvert property="manual_tests" refid="all.manual.tests"/>-->
         <echo file="${d4j.home}/framework/projects/lib/trace.sh" append="false">
 helpFunction() {
 echo ""
@@ -488,7 +493,7 @@ echo "error: Without providing class file name, I cannot start";
 helpFunction
 fi
 
-java -javaagent:${tracer}=tracefile:"$parameterB"/"$parameterA" -cp ${classpathProp} org.junit.runner.JUnitCore "$parameterA"
+java -javaagent:${tracer}=tracefile:"$parameterB"/"$parameterA" -cp ${classpathProp} JunitRunnerForD4J "$parameterA"
         </echo>
     </target>
 

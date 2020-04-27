@@ -224,7 +224,6 @@ foreach my $test (@tests) {
         $current_completed_list->{$current_class_java_name}->{$CONST_IS_TESTING_DONE} = $CONST_DONE;
         store_current_completed_list();
         store_current_checked_coverage();
-        unlink("$CURRENT_BUG_REPORT_DIR/$current_class_name");
         my $end = time();
         my $time_took = scalar $end - scalar $start;
         print("Time I took to finish computation: $time_took\n");
@@ -266,11 +265,9 @@ sub update_coverage_if_exists {
 sub compute_checked_coverage {
     my ($test) = @_;
     %assertions = Utils::get_assertion_line_numbers($test, @grep_assert_patterns);
-    my $trace_file_path = "$CURRENT_BUG_REPORT_DIR/$current_class_name";
-
-    trace();
+    # trace();
     my $private_assertions = get_and_erase_private_params();
-    slice($trace_file_path, $private_assertions);
+    slice($private_assertions);
 }
 
 # print(digest_file_hex($test, "SHA-512"));
@@ -340,7 +337,7 @@ sub uniq {
 }
 
 sub slice {
-    my ($trace_file_path, $private_assertions) = @_;
+    my ($private_assertions) = @_;
 
     while (1){
         my $trace_parameters = generate_trace_param();
@@ -348,13 +345,16 @@ sub slice {
             last;
         }
         my $assertion = (keys %{$trace_parameters})[0];
+
         my $dir_const = "_dir";
         my $trace_file_slice_output_dir = "$CURRENT_BUG_REPORT_DIR/$current_class_name$dir_const";
+        my $trace_file_path = "$trace_file_slice_output_dir/$current_class_name"."::"."$assertion";
         my $trace_file_slice_output_path =  "$trace_file_slice_output_dir/$assertion.slice.output";
         if (! -d $trace_file_slice_output_dir) {print(`mkdir $trace_file_slice_output_dir`);}
         my $trace_parameters_to_trace = "$trace_parameters->{$assertion}";
         print("slicing for assertion method: $assertion\n");
 
+        trace($trace_file_slice_output_dir, "$current_class_name"."::"."$assertion");
         $project->_ant_call_comp("run.slicer.script -DtraceParameters=$trace_parameters_to_trace -DtraceFile=$trace_file_path -DsliceOutput=$trace_file_slice_output_path");
 
         my @ignorable_tests = ();
@@ -372,18 +372,19 @@ sub slice {
                     push(@removables, int($removable_str));
                     foreach(@removables) {
                         remove_assertion(int($_));
-                        slice($trace_file_path, $private_assertions);
+                        slice($private_assertions);
                     }
                 }else{
                     print("came to remove assertion: $removable_str\n");
                     delete($assertions{Utils::trim($removable_str)});
-                    slice($trace_file_path, $private_assertions);
+                    slice($private_assertions);
                 }
             }
         }
         save_coverage_score($trace_file_slice_output_path, $assertion);
         delete($assertions{Utils::trim($assertion)});
         $trace_parameters = generate_trace_param();
+        unlink $trace_file_path
     }
 }
 
@@ -424,7 +425,8 @@ sub save_coverage_score {
 }
 
 sub trace {
-    $project->_ant_call_comp("run.tracer.script -DtraceFileDirPath=$CURRENT_BUG_REPORT_DIR -DclassName=$current_class_name");
+    my ($trace_file_slice_output_dir, $class_name_with_method_name) = @_;
+    $project->_ant_call_comp("run.tracer.script -DtraceFileDirPath=$trace_file_slice_output_dir -DclassName=$class_name_with_method_name");
 }
 
 sub extract_line_number{

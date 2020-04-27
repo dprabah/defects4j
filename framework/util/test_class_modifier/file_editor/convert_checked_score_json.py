@@ -17,7 +17,7 @@ def read_format_file(file_path, to_save):
                 break
             method_name = method_coverage.strip().split("[")[0]
             method_coverage_numbers = method_coverage.strip().split("[")[1].split(",")
-            current_dict[method_name] = method_coverage_numbers
+            current_dict[method_name] = list(map(int, method_coverage_numbers))
         if current_dict.__len__() > 0:
             final_output[class_value] = current_dict
 
