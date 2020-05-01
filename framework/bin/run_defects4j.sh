@@ -9,20 +9,21 @@ i ) bug_code="$OPTARG" ;;
 esac
 done
 
-for i in $(seq $start_bug $end_bug);
+for i in $(seq "$start_bug" "$end_bug");
 do
     dir_name="/home/ubuntu/tmp/"$bug_code"_"$i"_fixed"
+    log_file="running.log"
     bug_id=$i"f"
 
     if [ -d "$dir_name" ]; then
       echo "dir seems to be exist already"
-      cd $dir_name
-      defects4j checked -b both
+      cd "$dir_name"
+      defects4j checked -b both &>>$log_file
     else
       echo "dir not found, creating"
-      mkdir -p $dir_name
-      defects4j checkout -p $bug_code -v $bug_id -w $dir_name
-      cd $dir_name
-      defects4j checked -b both
+      mkdir -p "$dir_name"
+      defects4j checkout -p "$bug_code" -v "$bug_id" -w "$dir_name"
+      cd "$dir_name"
+      defects4j checked -b both &>>$log_file
     fi
 done
