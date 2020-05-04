@@ -206,13 +206,13 @@ foreach my $test (@tests) {
             next;
         }
 
-        if($previous_hash eq $current_hash){
+        if(defined $previous_hash and ($previous_hash eq $current_hash)){
             $current_completed_list->{$current_class_java_name}->{$CONST_IS_TESTING_DONE} = $CONST_SAME_HASH;
             store_current_completed_list();
             next;
         }
 
-        if($current_done eq $CONST_DONE){
+        if(defined $current_done and ($current_done eq $CONST_DONE)){
             $current_completed_list->{$current_class_java_name}->{$CONST_IS_TESTING_DONE} = $CONST_DONE;
             store_current_completed_list();
             next;
