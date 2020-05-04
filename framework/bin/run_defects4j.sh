@@ -1,18 +1,19 @@
 #!/bin/bash
 
-while getopts "s:e:i:t:" opt
+while getopts "s:e:i:t:u:" opt
 do
 case "$opt" in
 s ) start_bug="$OPTARG" ;;
 e ) end_bug="$OPTARG" ;;
 i ) bug_code="$OPTARG" ;;
 t ) type_to_run="$OPTARG" ;;
+u ) user_name="$OPTARG" ;;
 esac
 done
 
 for i in $(seq "$start_bug" "$end_bug");
 do
-    dir_name="/home/ubuntu/tmp/"$bug_code"_"$i"_fixed"
+    dir_name="/home/"$user_name"/tmp/"$bug_code"_"$i"_fixed"
     log_file="running.log"
     bug_id=$i"f"
 
