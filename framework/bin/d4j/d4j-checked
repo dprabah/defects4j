@@ -384,6 +384,9 @@ sub slice {
                 }else{
                     print("came to remove assertion: $removable_str\n");
                     delete($assertions{Utils::trim($removable_str)});
+                    if(index($removable_str,"Class") == 1){
+                        delete($assertions{Utils::trim($assertion)});
+                    }
                     slice($private_assertions);
                 }
             }
