@@ -14,7 +14,9 @@ done
 for i in $(seq "$start_bug" "$end_bug");
 do
     dir_name="/home/"$user_name"/tmp/"$bug_code"_"$i"_fixed"
-    log_file="running.log"
+    defects4j_path=$(which defects4j)
+    defects4j_path=${defects4j_path::-24}
+    log_file=$defects4j_path"/framework/projects/"$bug_code"/trace_files/"$i"f/running.log"
     bug_id=$i"f"
 
     if [ -d "$dir_name" ]; then
