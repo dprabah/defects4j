@@ -14,10 +14,10 @@ done
 for i in $(seq "$start_bug" "$end_bug");
 do
     dir_name="/home/"$user_name"/tmp/"$bug_code"_"$i"_fixed"
+    bug_id=$i"f"
     defects4j_path=$(which defects4j)
     defects4j_path=${defects4j_path::-24}
-    log_file=$defects4j_path"/framework/projects/"$bug_code"/trace_files/"$i"f/running.log"
-    bug_id=$i"f"
+    log_file=$defects4j_path"/framework/projects/"$bug_code"/trace_files/"$bug_id"/running.log"
 
     if [ -d "$dir_name" ]; then
       echo "dir seems to be exist already"
@@ -28,6 +28,9 @@ do
       mkdir -p "$dir_name"
       defects4j checkout -p "$bug_code" -v "$bug_id" -w "$dir_name"
       cd "$dir_name"
+      if [ ! -f "$log_file" ]; then
+        touch "$log_file"
+      fi
       defects4j checked "$type_to_run" &>>"$log_file"
     fi
 done
