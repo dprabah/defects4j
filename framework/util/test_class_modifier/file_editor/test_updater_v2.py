@@ -38,7 +38,7 @@ def process_test_expected(idx):
     start, end = get_open_close_brace(idx)
     current_line = file_contents[start]
 
-    if current_line.__contains__("throws"):
+    if current_line.__contains__("throws") or file_contents[start - 1].__contains__("throws"):
         line_idx = current_line.index("{") + 1
         current_line = current_line[0:line_idx] + "\n\ttry {" + current_line[line_idx:]
         file_contents[start] = current_line
