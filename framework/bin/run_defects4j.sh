@@ -23,6 +23,9 @@ do
     if [ -d "$dir_name" ]; then
       echo "dir seems to be exist already"
       cd "$dir_name"
+      if [ ! -d "$log_file_dir" ]; then
+        mkdir -p "$log_file_dir"
+      fi
       defects4j checked "$type_to_run" &>>"$log_file"
     else
       echo "dir not found, creating"
@@ -30,7 +33,7 @@ do
       defects4j checkout -p "$bug_code" -v "$bug_id" -w "$dir_name"
       cd "$dir_name"
       if [ ! -d "$log_file_dir" ]; then
-        touch "$log_file"
+        mkdir -p "$log_file_dir"
       fi
       defects4j checked "$type_to_run" &>>"$log_file"
     fi
