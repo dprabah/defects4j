@@ -122,11 +122,11 @@ if(defined $EXECUTE_BOTH or defined $IS_COMPUTE_COVERAGE_REPORT){
         my @test_methods = `cat $ALL_TEST_METHODS | grep $test_class`;
         foreach(@test_methods){
             my $current_test_method = Utils::convert_formatter_output_to_test_method($_);
-            print($current_test_method);
-                unlink($RAW_COVERAGE_XML);
-                print("computing coverage for test method = $current_test_method \n");
-                `defects4j coverage -i $EXPORT_SRC_CLASS_FILE_PATH -t $current_test_method`;
-                print(`python3 $LINE_COVERAGE_CALC_PATH $RAW_COVERAGE_XML $CURRENT_BUG_REPORT_DIR $current_test_method $ignorable_strings 'ignore_line_details'`);
+            print("$current_test_method \n");
+            unlink($RAW_COVERAGE_XML);
+            print("computing coverage for test method = $current_test_method \n");
+            `defects4j coverage -i $EXPORT_SRC_CLASS_FILE_PATH -t $current_test_method`;
+            print(`python3 $LINE_COVERAGE_CALC_PATH $RAW_COVERAGE_XML $CURRENT_BUG_REPORT_DIR $current_test_method $ignorable_strings 'ignore_line_details'`);
         }
     }
     print(`python3 $LINE_COVERAGE_CALC_PATH $RAW_COVERAGE_XML $CURRENT_BUG_REPORT_DIR $WORK_DIR/$props->{$PROP_DIR_SRC_CLASSES} $ignorable_strings 'line_details'`);
