@@ -29,6 +29,7 @@ do
       defects4j checked "$type_to_run" &>>"$log_file"
     else
       echo "dir not found, creating"
+      cd
       mkdir -p "$dir_name"
       defects4j checkout -p "$bug_code" -v "$bug_id" -w "$dir_name"
       cd "$dir_name"
