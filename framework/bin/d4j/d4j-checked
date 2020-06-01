@@ -52,7 +52,7 @@ unless(defined $config and defined $props){
     exit 1;
 }
 
-my @grep_assert_patterns = ('check.*(*', 'Assert.*(*', 'assert.*(*', 'verify.*(*', 'logException(.*);');
+my @grep_assert_patterns = ('check.*(*', 'Assert.*(*', 'assert.*(*', 'test(*', 'testSame(*', 'verify.*(*', 'logException(.*);');
 my @ignorable_strings = ('try', 'return');
 my $ignorable_strings = join ",", @ignorable_strings;
 my $CURRENT_BUG_TRACE_FILE_DIR = "$PROJECTS_DIR/$config->{$CONFIG_PID}/trace_files";
