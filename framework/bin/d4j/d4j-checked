@@ -200,10 +200,10 @@ foreach my $test (@tests) {
         #     next;
         # }
 
-        if ($current_class_java_name ~~ @skipped_tests){
+        if ($current_class_name ~~ @skipped_tests){
             $current_completed_list->{$current_class_java_name}->{$CONST_IS_TESTING_DONE} = $CONST_SKIPPED;
             store_current_completed_list();
-            print("Skipped test: $current_class_java_name\n");
+            print("Skipped test: $current_class_name\n");
             next;
         }
 
