@@ -489,6 +489,13 @@ sub convert_classfile_name_to_java_name {
     return "$tmp_classname.java";
 }
 
+sub convert_class_name_to_full_java_path {
+    # @_ >= 2 or die $ARG_ERROR;
+    my ($class_name, $work_dir) = @_;
+    my $tmp_class_name = replace('\.', '/', $class_name);
+    return "$work_dir/$tmp_class_name.java";
+}
+
 sub convert_filename_to_java_name {
     # @_ >= 2 or die $ARG_ERROR;
     my ($file_name, $tests_dir_path) = @_;
