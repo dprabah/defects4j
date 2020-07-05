@@ -148,7 +148,7 @@ if(defined $IGNORE_TRIGGER_TEST){
         my $class_name = (split /::/, $_)[0];
         my $method_name = (split /::/, $_)[1];
         my $current_java_file_path = Utils::convert_class_name_to_full_java_path($class_name, "$WORK_DIR/$props->{$PROP_DIR_SRC_TESTS}");
-        print(`python $UPDATE_COMMENT_TEST_SCRIPT_PATH $current_java_file_path $method_name`);
+        print(`python3 $UPDATE_COMMENT_TEST_SCRIPT_PATH $current_java_file_path $method_name`);
     }
 }
 $project->mutate($classes, \@MUT_OPS) > 0 or die "Cannot mutate project!";
