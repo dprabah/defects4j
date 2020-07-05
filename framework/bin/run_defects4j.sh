@@ -26,8 +26,7 @@ do
       if [ ! -d "$log_file_dir" ]; then
         mkdir -p "$log_file_dir"
       fi
-      defects4j checked &>>"$log_file"
-      defects4j checked -k ignore &>>"$log_file"
+      defects4j checked "$type_to_run" &>>"$log_file"
     else
       echo "dir not found, creating"
       cd
@@ -37,7 +36,6 @@ do
       if [ ! -d "$log_file_dir" ]; then
         mkdir -p "$log_file_dir"
       fi
-      defects4j checked &>>"$log_file"
-      defects4j checked -k ignore &>>"$log_file"
+      defects4j checked "$type_to_run" &>>"$log_file"
     fi
 done
