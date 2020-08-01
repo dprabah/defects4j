@@ -8,3 +8,9 @@ project_repos/*
 !project_repos/get_repos.sh
 major/
 work/
+**/venv/*
+**/node_modules/*
+**/.idea
+nohup.out
+package-lock.json
+**/__pycache__/
