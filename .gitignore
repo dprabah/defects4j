@@ -8,7 +8,6 @@ project_repos/*
 !project_repos/get_repos.sh
 major/
 work/
-**/trace_files/*
 **/trace.sh
 **/slice.sh
 
