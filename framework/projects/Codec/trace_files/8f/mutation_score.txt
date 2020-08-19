@@ -1,0 +1,1 @@
+{"mutation_score": 66.4192949907236, "mutation_score_buggy": 66.4192949907236}
