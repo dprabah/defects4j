@@ -149,7 +149,7 @@ for(@src){
         $all_src_classes = "$java_class_file\n$all_src_classes";
     }
 }
-# put_given_content_to_file($all_src_classes, "$SCRIPT_DIR/projects/$pid/modified_classes/$bid.src");
+put_given_content_to_file($all_src_classes, "$SCRIPT_DIR/projects/$pid/modified_classes/$bid.src");
 my $classes = $INSTRUMENT // "$SCRIPT_DIR/projects/$pid/modified_classes/$bid.src";
 
 if(defined $IGNORE_TRIGGER_TEST){
