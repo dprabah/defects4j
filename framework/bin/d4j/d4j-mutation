@@ -128,7 +128,7 @@ my $vid = $config->{$CONFIG_VID};
 my $res = Utils::check_vid($vid);
 my $bid = $res->{bid};
 my $type= $res->{type};
-my $mutation_score = "mutation_score.txt";
+my $mutation_score = "mutation_score_full.txt";
 my $UPDATE_COMMENT_TEST_SCRIPT_PATH = "$UTIL_DIR/test_class_modifier/remove_test.py";
 my $CURRENT_BUG_TRACE_FILE_DIR = "$PROJECTS_DIR/$config->{$CONFIG_PID}/trace_files";
 
@@ -141,6 +141,15 @@ my $project = Project::create_project($pid);
 $project->{prog_root} = $WORK_DIR;
 
 # Classes to mutate -- default is all modified classes
+my @src = Utils::get_all_classes($WORK_DIR, $props->{$PROP_DIR_SRC_CLASSES});
+my $all_src_classes = '';
+for(@src){
+    my $java_class_file = Utils::convert_filename_to_class_name($_, $props->{$PROP_DIR_SRC_CLASSES});
+    if (index($_, 'package-info') == -1) {
+        $all_src_classes = "$java_class_file\n$all_src_classes";
+    }
+}
+# put_given_content_to_file($all_src_classes, "$SCRIPT_DIR/projects/$pid/modified_classes/$bid.src");
 my $classes = $INSTRUMENT // "$SCRIPT_DIR/projects/$pid/modified_classes/$bid.src";
 
 if(defined $IGNORE_TRIGGER_TEST){
@@ -151,6 +160,7 @@ if(defined $IGNORE_TRIGGER_TEST){
         print(`python3 $UPDATE_COMMENT_TEST_SCRIPT_PATH $current_java_file_path $method_name`);
     }
 }
+
 $project->mutate($classes, \@MUT_OPS) > 0 or die "Cannot mutate project!";
 
 my $log_file = "$WORK_DIR/.mutation.log";
@@ -199,10 +209,8 @@ my $killRatioCov = $mutCov == 0 ? 0 : $mutKill/$mutCov*100;
 if(defined $IGNORE_TRIGGER_TEST){
     append_given_content_to_file("\"mutation_score_buggy\": $killRatioCov}", "$CURRENT_BUG_TRACE_FILE_DIR", "$mutation_score");
 }else{
-    append_given_content_to_file("{\"mutation_score\": $killRatioCov, ", "$CURRENT_BUG_TRACE_FILE_DIR", "$mutation_score");
+    append_given_content_to_file("{\"mutation_score\": $killRatioCov}", "$CURRENT_BUG_TRACE_FILE_DIR", "$mutation_score");
 }
-
-
 
 #printf("%17s: %.1f seconds\n", "Total run time", ($timePreproc+$timeAnalysis));
 
@@ -213,6 +221,14 @@ sub append_given_content_to_file{
         print(`touch "$dir_name//$vid/$file" `);
     }
     open my $fh, '>>', "$dir_name//$vid/$file";
+    print $fh $content;
+    close($fh);
+}
+
+sub put_given_content_to_file{
+    my ($content, $file) = @_;
+    `touch $file`;
+    open my $fh, '>', $file;
     print $fh $content;
     close($fh);
 }
