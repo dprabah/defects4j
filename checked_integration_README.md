@@ -20,8 +20,6 @@ cd defects4j &&
 
 ---
 
----
-
 ```bash
 cd &&
 wget [https://cpan.metacpan.org/authors/id/H/HA/HAARG/local-lib-2.000024.tar.gz](https://cpan.metacpan.org/authors/id/H/HA/HAARG/local-lib-2.000024.tar.gz) &&
@@ -42,18 +40,18 @@ git checkout TW-01_checkedcoverage_integration
 
 ---
 
-## Download Java:
+## Download Java
 
 We need Java 1.7 because of JavaSlicer's dependency.
 
-### Steps to download Java 1.7:
+### Steps to download Java 1.7
 
 - In browser → Go to → [https://www.oracle.com/java/technologies/javase/javase7-archive-downloads.html](https://www.oracle.com/java/technologies/javase/javase7-archive-downloads.html)
 - Login → chose suitable distribution →click download
 - Copy the download link →wget <download link> →a shortcut to bypass authentication and download java 1.7 in server.
 - Option 2 might be downloading open-jdk.
 
-## Setting up path:
+## Setting up path
 
 ```bash
 export PATH=$PATH:/home/**<USER_NAME>**/thesis/defects4j/framework/bin
@@ -62,11 +60,11 @@ export PATH=$PATH:/home/**<USER_NAME>**/jdk1.7.0_80/bin
 
 ---
 
-## Execution:
+## Execution
 
 A new API `defects4j checked` is added which computes checked coverage score for the exported bug. A downside using this `defects4j checked` is for every bug, we have to export and compute score individually, which is slower. 
 
-### Shell scripts:
+### Shell scripts
 
 To execute `defects4j checked` in a batch we wrote a script `run_defects4j.sh` which is placed under the path `defects4j/framework/bin/`.
 
@@ -97,7 +95,7 @@ Since we had to compute the coverage score for statement coverage as well for ea
 - `defects4j checked -c coverage -a all` = this computes only statement coverage for all tests.
 - `defects4j checked -b both -a all` = this computes both checked and statement coverage for all tests.
 
-## Storing the execution results:
+## Storing the execution results
 
 - Once the checked coverage score is completed, The scores are stored in a different branch     (`TW-02_checked_coverage_scores`), in order to avoid intervention of scores, or accidentally getting updated with the testing score etc.
 - Before storing the score, Executing the `.py` file [https://github.com/dprabah/defects4j_statistics/blob/master/clean_resource_files.py](https://github.com/dprabah/defects4j_statistics/blob/master/clean_resource_files.py) to remove the wanted directories.
