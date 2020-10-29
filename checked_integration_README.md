@@ -9,7 +9,7 @@ sudo apt update &&
 sudo apt-get install git unzip zip build-essential make wget &&
 mkdir thesis &&
 cd thesis &&
-git clone [https://github.com/dprabah/defects4j.git](https://github.com/dprabah/defects4j.git) &&
+git clone https://github.com/dprabah/defects4j.git &&
 cd defects4j &&
 ./init.sh
 ```
@@ -22,7 +22,7 @@ cd defects4j &&
 
 ```bash
 cd &&
-wget [https://cpan.metacpan.org/authors/id/H/HA/HAARG/local-lib-2.000024.tar.gz](https://cpan.metacpan.org/authors/id/H/HA/HAARG/local-lib-2.000024.tar.gz) &&
+wget https://cpan.metacpan.org/authors/id/H/HA/HAARG/local-lib-2.000024.tar.gz &&
 tar xvf local-lib-2.000024.tar.gz &&
 cd local-lib-2.000024 &&
 perl [Makefile.PL](http://makefile.pl/) --bootstrap &&
@@ -31,6 +31,8 @@ make install &&
 cd /home/**<USER_NAME>**/thesis/defects4j/ &&
 sudo cpan JSON DBI List::MoreUtils File::Slurp
 ```
+
+---
 
 ## Checking out right branch
 
@@ -73,7 +75,7 @@ The shellscript will execute the bug range one by one.
 The `run_defects4j.sh` accepts few parameters and check out the bug version mentioned, and runs the `defects4j checked`
 
 ```bash
-run_defects4j.sh -s 61 -e 112 -i JacksonDatabind -t "-b both" -u **<USER_NAME>** 
+run_defects4j.sh -s 61 -e 112 -i JacksonDatabind -t "-b both" -u **<USER_NAME>**
 ```
 
 > The above command executes bug starting from 61 till 112 one by one, not parallel.
@@ -101,6 +103,30 @@ Since we had to compute the coverage score for statement coverage as well for ea
 - Before storing the score, Executing the `.py` file [https://github.com/dprabah/defects4j_statistics/blob/master/clean_resource_files.py](https://github.com/dprabah/defects4j_statistics/blob/master/clean_resource_files.py) to remove the wanted directories.
 
 ---
+
+## Script paths
+
+### checked coverage script
+
+[https://github.com/dprabah/defects4j/blob/TW-01_checkedcoverage_integration/framework/bin/d4j/d4j-checked](https://github.com/dprabah/defects4j/blob/TW-01_checkedcoverage_integration/framework/bin/d4j/d4j-checked)
+
+### Slicer and tracer scripts
+
+[https://github.com/dprabah/defects4j/blob/TW-01_checkedcoverage_integration/framework/projects/defects4j.build.xml](https://github.com/dprabah/defects4j/blob/TW-01_checkedcoverage_integration/framework/projects/defects4j.build.xml)
+
+[https://github.com/dprabah/defects4j/tree/TW-01_checkedcoverage_integration/framework/lib](https://github.com/dprabah/defects4j/tree/TW-01_checkedcoverage_integration/framework/lib) - Slicer tracer jar files
+
+### Test class modifers
+
+[https://github.com/dprabah/defects4j/tree/TW-01_checkedcoverage_integration/framework/util/test_class_modifier](https://github.com/dprabah/defects4j/tree/TW-01_checkedcoverage_integration/framework/util/test_class_modifier)
+
+### J-unit runner
+
+[https://github.com/dprabah/defects4j/tree/TW-01_checkedcoverage_integration/framework/lib/junit_runner](https://github.com/dprabah/defects4j/tree/TW-01_checkedcoverage_integration/framework/lib/junit_runner)
+
+### Slicer and tracer source
+
+[https://github.com/dprabah/javaslicer](https://github.com/dprabah/javaslicer)
 
 ## Defects4J Statistics
 
