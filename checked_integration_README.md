@@ -25,7 +25,7 @@ cd &&
 wget https://cpan.metacpan.org/authors/id/H/HA/HAARG/local-lib-2.000024.tar.gz &&
 tar xvf local-lib-2.000024.tar.gz &&
 cd local-lib-2.000024 &&
-perl [Makefile.PL](http://makefile.pl/) --bootstrap &&
+perl Makefile.PL --bootstrap &&
 make test &&
 make install &&
 cd /home/**<USER_NAME>**/thesis/defects4j/ &&
@@ -46,12 +46,15 @@ git checkout TW-01_checkedcoverage_integration
 
 We need Java 1.7 because of JavaSlicer's dependency.
 
-### Steps to download Java 1.7
+### Option 1: Steps to download Java 1.7
 
 - In browser → Go to → [https://www.oracle.com/java/technologies/javase/javase7-archive-downloads.html](https://www.oracle.com/java/technologies/javase/javase7-archive-downloads.html)
 - Login → chose suitable distribution →click download
 - Copy the download link →wget <download link> →a shortcut to bypass authentication and download java 1.7 in server.
-- Option 2 might be downloading open-jdk.
+
+### Option 2: Downloading open-jdk
+
+- Setting up open-jdk should work fine.
 
 ## Setting up path
 
@@ -75,10 +78,11 @@ The shellscript will execute the bug range one by one.
 The `run_defects4j.sh` accepts few parameters and check out the bug version mentioned, and runs the `defects4j checked`
 
 ```bash
+cd <Defects4J-installation-folder>/framework/bin
 run_defects4j.sh -s 61 -e 112 -i JacksonDatabind -t "-b both" -u **<USER_NAME>**
 ```
 
-> The above command executes bug starting from 61 till 112 one by one, not parallel.
+> The above command executes bug starting from 61 till 112 one by one, not in parallel.
 
 Where
 
