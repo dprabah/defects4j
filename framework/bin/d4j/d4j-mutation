@@ -109,7 +109,8 @@ use Getopt::Std;
 use Pod::Usage;
 
 my %cmd_opts;
-getopts('t:w:rs:i:e:m:', \%cmd_opts) or pod2usage( { -verbose => 1, -input => __FILE__} );
+
+getopts('t:w:rs:i:e:m:k:', \%cmd_opts) or pod2usage( { -verbose => 1, -input => __FILE__} );
 
 my $WORK_DIR    = Utils::get_abs_path($cmd_opts{w} // ".");
 my $REL_TESTS   = defined $cmd_opts{r} ? 1 : 0;
@@ -118,11 +119,14 @@ my $TEST_SUITE  = $cmd_opts{s};
 my $INSTRUMENT  = $cmd_opts{i};
 my $EXCL        = $cmd_opts{e};
 my $MUT_OPS_FILE= $cmd_opts{m};
+my $IGNORE_TRIGGER_TEST        = $cmd_opts{k};
+
 if ((defined $SINGLE_TEST || defined $TEST_SUITE) && $REL_TESTS==1) {
     pod2usage( { -verbose => 1, -input => __FILE__} );
 }
 
 my $config = Utils::read_config_file("$WORK_DIR/$CONFIG");
+my $props = Utils::read_config_file("$WORK_DIR/$PROP_FILE");
 unless(defined $config) {
     print(STDERR "$WORK_DIR is not a valid working directory!\n");
     exit 1;
@@ -132,6 +136,10 @@ my $vid = $config->{$CONFIG_VID};
 my $res = Utils::check_vid($vid);
 my $bid = $res->{bid};
 my $type= $res->{type};
+my $mutation_score = "mutation_score_full.txt";
+my $UPDATE_COMMENT_TEST_SCRIPT_PATH = "$UTIL_DIR/test_class_modifier/remove_test.py";
+my $CURRENT_BUG_TRACE_FILE_DIR = "$PROJECTS_DIR/$config->{$CONFIG_PID}/trace_files";
+
 
 # The mutation operators that should be enabled
 my @MUT_OPS = ("AOR", "LOR","SOR", "COR", "ROR", "ORU", "LVR", "STD");
@@ -144,13 +152,32 @@ my $project = Project::create_project($pid);
 $project->{prog_root} = $WORK_DIR;
 
 # Classes to mutate -- default is all modified classes
+my @src = Utils::get_all_classes($WORK_DIR, $props->{$PROP_DIR_SRC_CLASSES});
+my $all_src_classes = '';
+for(@src){
+    my $java_class_file = Utils::convert_filename_to_class_name($_, $props->{$PROP_DIR_SRC_CLASSES});
+    if (index($_, 'package-info') == -1) {
+        $all_src_classes = "$java_class_file\n$all_src_classes";
+    }
+}
+put_given_content_to_file($all_src_classes, "$SCRIPT_DIR/projects/$pid/modified_classes/$bid.src");
 my $classes = $INSTRUMENT // "$SCRIPT_DIR/projects/$pid/modified_classes/$bid.src";
+
+if(defined $IGNORE_TRIGGER_TEST){
+    for (split /,/, $props->{$PROP_TESTS_TRIGGER}) {
+        my $class_name = (split /::/, $_)[0];
+        my $method_name = (split /::/, $_)[1];
+        my $current_java_file_path = Utils::convert_class_name_to_full_java_path($class_name, "$WORK_DIR/$props->{$PROP_DIR_SRC_TESTS}");
+        print(`python3 $UPDATE_COMMENT_TEST_SCRIPT_PATH $current_java_file_path $method_name`);
+    }
+}
 
 $project->mutate($classes, \@MUT_OPS) > 0 or die "Cannot mutate project!";
 
 my $log_file = "$WORK_DIR/.mutation.log";
 # Run the test suite, according to the provided flags
 my $mut_result;
+
 if (defined $TEST_SUITE) {
     # Run external test suite
     my $test_dir = "$WORK_DIR/.test_suite";
@@ -160,6 +187,7 @@ if (defined $TEST_SUITE) {
 } else {
     # Run developer-written tests
     $project->compile_tests() or die "Cannot compile test suite!";
+    # print(Utils::convert_filename_to_java_name($test, $props->{$PROP_DIR_SRC_TESTS}));
     $mut_result = $project->mutation_analysis($log_file, $REL_TESTS, $EXCL, $SINGLE_TEST);
 }
 
@@ -184,8 +212,34 @@ close(RES);
 my ($mutGen, $mutCov, $mutKill, $mutLive, $timePreproc, $timeAnalysis) = split(/,/, $line);
 my $killRatioGen = $mutGen == 0 ? 0 : $mutKill/$mutGen*100;
 my $killRatioCov = $mutCov == 0 ? 0 : $mutKill/$mutCov*100;
-printf("%17s: %d\n", "Mutants generated", $mutGen);
-printf("%17s: %d\n", "Mutants covered", $mutCov);
-printf("%17s: %d\n", "Mutants killed", $mutKill);
-printf("%17s: %.1f%% (%.1f%%)\n", "Mutation score", $killRatioCov, $killRatioGen);
-printf("%17s: %.1f seconds\n", "Total run time", ($timePreproc+$timeAnalysis));
+#printf("%17s: %d\n", "Mutants generated", $mutGen);
+#printf("%17s: %d\n", "Mutants covered", $mutCov);
+#printf("%17s: %d\n", "Mutants killed", $mutKill);
+# printf("%s: %.1f%% (%.1f%%)}\n", "Mutation score", $killRatioCov, $killRatioGen);
+
+if(defined $IGNORE_TRIGGER_TEST){
+    append_given_content_to_file("\"mutation_score_buggy\": $killRatioCov}", "$CURRENT_BUG_TRACE_FILE_DIR", "$mutation_score");
+}else{
+    append_given_content_to_file("{\"mutation_score\": $killRatioCov}", "$CURRENT_BUG_TRACE_FILE_DIR", "$mutation_score");
+}
+
+#printf("%17s: %.1f seconds\n", "Total run time", ($timePreproc+$timeAnalysis));
+
+sub append_given_content_to_file{
+    my ($content, $dir_name, $file) = @_;
+    if (not -d "$dir_name/$vid") {
+        print(`mkdir -p $dir_name/$vid`);
+        print(`touch "$dir_name//$vid/$file" `);
+    }
+    open my $fh, '>>', "$dir_name//$vid/$file";
+    print $fh $content;
+    close($fh);
+}
+
+sub put_given_content_to_file{
+    my ($content, $file) = @_;
+    `touch $file`;
+    open my $fh, '>', $file;
+    print $fh $content;
+    close($fh);
+}

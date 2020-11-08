@@ -54,8 +54,8 @@ of the checked-out project version.
 	    <property name="test.dir" value="${test.home}" />
             <path id="test.classpath">
                 <path refid="compile.classpath"/>
-                <pathelement location="${test.classes.dir}"/>
-                <pathelement location="${classes.dir}"/>
+<!--                <pathelement location="${test.classes.dir}"/>-->
+<!--                <pathelement location="${classes.dir}"/>-->
             </path>
           </then>
           <else>
