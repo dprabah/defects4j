@@ -494,7 +494,7 @@ echo "error: Without providing class file name, I cannot start";
 helpFunction
 fi
 
-java -javaagent:${tracer}=tracefile:"$parameterB"/"$parameterA" -cp ${classpathProp} JunitRunnerForD4J "$parameterA"
+java -Xverify:none -javaagent:${tracer}=tracefile:"$parameterB"/"$parameterA" -cp ${classpathProp} JunitRunnerForD4J "$parameterA"
         </echo>
     </target>
 
