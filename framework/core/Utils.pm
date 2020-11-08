@@ -666,7 +666,10 @@ sub get_relevant_classes{
     push my @relevant_tests, `defects4j export -p tests.relevant`;
     my @relevant_tests_as_file_path;
     foreach(@relevant_tests){
-        push @relevant_tests_as_file_path, "$root_dir/$tests_dir_path/". replace("\n","", replace("\\.","/", $_)) . ".java";
+        #excluding the sub class tests
+        if (index($_, '$') == -1){
+            push @relevant_tests_as_file_path, "$root_dir/$tests_dir_path/". replace("\n","", replace("\\.","/", $_)) . ".java";
+        }
     }
     return @relevant_tests_as_file_path;
 }
