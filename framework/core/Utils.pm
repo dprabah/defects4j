@@ -663,7 +663,6 @@ sub convert_filename_to_java_name {
 
 sub get_relevant_classes{
     my ($root_dir, $tests_dir_path) = @_;
-    print(`pwd`);
     push my @relevant_tests, `defects4j export -p tests.relevant`;
     my @relevant_tests_as_file_path;
     foreach(@relevant_tests){
