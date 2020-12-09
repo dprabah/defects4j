@@ -407,7 +407,7 @@ project-specific build file ("project_id"/"project_id".build.xml) for the
         <property name="traceFileDirPath" value="default-module" />
         <property name="className" value="default-module" />
         <exec executable="/bin/bash" output="${traceFileDirPath}/${className}.junit.txt">
-            <arg value="${d4j.home}/framework/projects/${d4j.project.id}/trace_files/trace.sh"/>
+            <arg value="${d4j.home}/framework/projects/${d4j.project.id}/trace_files/${d4j.bug.id}f/trace.sh"/>
             <arg value="-c${className}"/>
             <arg value="-p${traceFileDirPath}"/>
         </exec>
@@ -419,7 +419,7 @@ project-specific build file ("project_id"/"project_id".build.xml) for the
         <property name="sliceOutput" value="default-module" />
 
         <exec executable="/bin/bash" output="${sliceOutput}">
-            <arg value="${d4j.home}/framework/projects/${d4j.project.id}/trace_files/slice.sh"/>
+            <arg value="${d4j.home}/framework/projects/${d4j.project.id}/trace_files/${d4j.bug.id}f/slice.sh"/>
             <arg value="-p${traceParameters}"/>
             <arg value="-t${traceFile}"/>
         </exec>
@@ -428,7 +428,7 @@ project-specific build file ("project_id"/"project_id".build.xml) for the
     <target name="create.slicer.script" description="Creates a script file in home dir, to slice the given class file" >
         <pathconvert property="classpathProp" refid="d4j.test.classpath"/>
         <pathconvert property="manual_tests" refid="all.manual.tests"/>
-        <echo file="${d4j.home}/framework/projects/${d4j.project.id}/trace_files/slice.sh" append="false">
+        <echo file="${d4j.home}/framework/projects/${d4j.project.id}/trace_files/${d4j.bug.id}f/slice.sh" append="false">
 helpFunction(){
 echo ""
 echo "Usage: slice.sh -p trace-parameters -t trace-file"
@@ -471,7 +471,7 @@ java -Xmx12g -jar ${slicer} -p "$parameterA" "$parameterC"
     <target name="create.tracer.script" description="Creates a script file in home dir, to trace the given class file" >
         <pathconvert property="classpathProp" refid="classpathProperties"/>
         <!--<pathconvert property="manual_tests" refid="all.manual.tests"/>-->
-        <echo file="${d4j.home}/framework/projects/${d4j.project.id}/trace_files/trace.sh" append="false">
+        <echo file="${d4j.home}/framework/projects/${d4j.project.id}/trace_files/${d4j.bug.id}f/trace.sh" append="false">
 helpFunction() {
 echo ""
 echo "Usage: trace.sh -c class file name"
