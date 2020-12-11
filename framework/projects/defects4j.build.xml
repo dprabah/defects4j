@@ -458,7 +458,7 @@ echo "With out providing class file name, I cannot grep a particular class";
 helpFunction
 fi
 
-java -Xmx12g -jar ${slicer} -p "$parameterA" "$parameterC"
+$JAVA_HOME/bin/java -Xmx12g -jar ${slicer} -p "$parameterA" "$parameterC"
         </echo>
     </target>
 
@@ -494,7 +494,7 @@ echo "error: Without providing class file name, I cannot start";
 helpFunction
 fi
 
-java -Xverify:none -javaagent:${tracer}=tracefile:"$parameterB"/"$parameterA" -cp ${classpathProp} JunitRunnerForD4J "$parameterA"
+$JAVA_HOME/bin/java -Xverify:none -javaagent:${tracer}=tracefile:"$parameterB"/"$parameterA" -cp ${classpathProp} JunitRunnerForD4J "$parameterA"
         </echo>
     </target>
 
