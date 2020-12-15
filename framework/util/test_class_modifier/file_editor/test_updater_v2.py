@@ -95,11 +95,12 @@ def process_catch_line(idx):
         exception_var = get_exception_variable(current_line)
         if current_line.__contains__("{"):
             line_idx = current_line.rindex("{") + 1
-        else:
+        elif file_contents[idx + 1].__contains__("{"):
             idx = idx + 1
             current_line = file_contents[idx]
             line_idx = current_line.rindex("{") + 1
-
+        else :
+            return
         current_line = current_line[0:line_idx] \
                        + "\n \t\t\tlogException("+exception_var+");\n" \
                        + current_line[line_idx:]
