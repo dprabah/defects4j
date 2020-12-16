@@ -102,6 +102,7 @@ my $current_class_name;
 my $total_number_of_tests = scalar @tests;
 my $total_number_of_tests_for_conv = $total_number_of_tests;
 
+print(`defects4j compile`); #compile to generate compileLib in defects4j.build.xml
 if(defined $EXECUTE_BOTH or defined $IS_COMPUTE_COVERAGE_REPORT){
     print("Starting to compute statement coverage \n");
     if (-f $EXPORT_SRC_CLASS_FILE_PATH) {
