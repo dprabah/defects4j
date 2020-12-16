@@ -56,6 +56,9 @@ def process_test_expected(idx):
 
 def get_exception_signature(current_line):
     line_as_array = current_line.split(" ")
+    if 'Throwable' in line_as_array:
+        return "Exception"
+
     exception_index = [i for i, phrase in enumerate(line_as_array) if phrase.__contains__("Exception")]
     return "Exception" if exception_index.__len__() == 0 else line_as_array[exception_index[-1]]
 
