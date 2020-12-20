@@ -406,7 +406,7 @@ project-specific build file ("project_id"/"project_id".build.xml) for the
     <target name="run.tracer.script">
         <property name="traceFileDirPath" value="default-module" />
         <property name="className" value="default-module" />
-        <exec executable="/bin/bash" output="${traceFileDirPath}/${className}.junit.txt" timeout="3600">
+        <exec executable="/bin/bash" output="${traceFileDirPath}/${className}.junit.txt">
             <arg value="${d4j.home}/framework/projects/${d4j.project.id}/trace_files/${d4j.bug.id}f/trace.sh"/>
             <arg value="-c${className}"/>
             <arg value="-p${traceFileDirPath}"/>
@@ -418,7 +418,7 @@ project-specific build file ("project_id"/"project_id".build.xml) for the
         <property name="traceFile" value="default-module" />
         <property name="sliceOutput" value="default-module" />
 
-        <exec executable="/bin/bash" output="${sliceOutput}" timeout="3600">
+        <exec executable="/bin/bash" output="${sliceOutput}">
             <arg value="${d4j.home}/framework/projects/${d4j.project.id}/trace_files/${d4j.bug.id}f/slice.sh"/>
             <arg value="-p${traceParameters}"/>
             <arg value="-t${traceFile}"/>
