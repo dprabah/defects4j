@@ -406,23 +406,29 @@ project-specific build file ("project_id"/"project_id".build.xml) for the
     <target name="run.tracer.script">
         <property name="traceFileDirPath" value="default-module" />
         <property name="className" value="default-module" />
-        <exec executable="/bin/bash" output="${traceFileDirPath}/${className}.junit.txt">
-            <arg value="${d4j.home}/framework/projects/${d4j.project.id}/trace_files/${d4j.bug.id}f/trace.sh"/>
-            <arg value="-c${className}"/>
-            <arg value="-p${traceFileDirPath}"/>
-        </exec>
+
+        <echo file="${d4j.home}/framework/projects/${d4j.project.id}/trace_files/${d4j.bug.id}f/trace.csv" append="true">
+            ${d4j.home}/framework/projects/${d4j.project.id}/trace_files/${d4j.bug.id}f/trace.sh -c${className} -p${traceFileDirPath} -o${traceFileDirPath}/${className}.junit.txt
+        </echo>
+<!--        <exec executable="/bin/bash" output="${traceFileDirPath}/${className}.junit.txt">-->
+<!--            <arg value="${d4j.home}/framework/projects/${d4j.project.id}/trace_files/${d4j.bug.id}f/trace.sh"/>-->
+<!--            <arg value="-c${className}"/>-->
+<!--            <arg value="-p${traceFileDirPath}"/>-->
+<!--        </exec>-->
     </target>
 
     <target name="run.slicer.script">
         <property name="traceParameters" value="default-module" />
         <property name="traceFile" value="default-module" />
         <property name="sliceOutput" value="default-module" />
-
-        <exec executable="/bin/bash" output="${sliceOutput}">
-            <arg value="${d4j.home}/framework/projects/${d4j.project.id}/trace_files/${d4j.bug.id}f/slice.sh"/>
-            <arg value="-p${traceParameters}"/>
-            <arg value="-t${traceFile}"/>
-        </exec>
+        <echo file="${d4j.home}/framework/projects/${d4j.project.id}/trace_files/${d4j.bug.id}f/slice.csv" append="true">
+            ${d4j.home}/framework/projects/${d4j.project.id}/trace_files/${d4j.bug.id}f/slice.sh -p${traceParameters} -t${traceFile} -o${sliceOutput}
+        </echo>
+<!--        <exec executable="/bin/bash" output="${sliceOutput}">-->
+<!--            <arg value="${d4j.home}/framework/projects/${d4j.project.id}/trace_files/${d4j.bug.id}f/slice.sh"/>-->
+<!--            <arg value="-p${traceParameters}"/>-->
+<!--            <arg value="-t${traceFile}"/>-->
+<!--        </exec>-->
     </target>
 
     <target name="create.slicer.script" description="Creates a script file in home dir, to slice the given class file" >
@@ -434,14 +440,16 @@ echo ""
 echo "Usage: slice.sh -p trace-parameters -t trace-file"
 echo -e "\t-t Name of trace file"
 echo -e "\t-p Trace parameters"
+echo -o "\t-o Slice output path"
 exit 1 # Exit script after printing help
 }
 
-while getopts "t:p:" opt
+while getopts "t:p:o:" opt
 do
 case "$opt" in
 t ) parameterA="$OPTARG" ;;
 p ) parameterC="$OPTARG" ;;
+o ) parameterO="$OPTARG" ;;
 ? ) helpFunction ;; # Print helpFunction in case parameter is non-existent
 esac
 done
@@ -454,11 +462,58 @@ fi
 
 if [ -z "$parameterC" ]
 then
-echo "With out providing class file name, I cannot grep a particular class";
+echo "With out providing trace parameters, I cannot trace";
 helpFunction
 fi
 
-$JAVA_HOME/bin/java -Xmx12g -jar ${slicer} -p "$parameterA" "$parameterC"
+if [ -z "$parameterO" ]
+then
+echo "provide a slice output file";
+helpFunction
+fi
+
+join () {
+    local IFS="$1"
+    shift
+    echo "$*"
+}
+
+call_slice(){
+    "$JAVA_HOME"/bin/java -Xmx12g -jar ${slicer} -p "$parameterA" "$parameterC" > "$parameterO"
+}
+re='^[0-9]+$'
+STOP_CONDITION_MET=0
+while [ "$STOP_CONDITION_MET" -eq 0 ]; do
+    call_slice
+
+    error_code=$?
+    if [ "$error_code" -ne 0 ] ; then
+        error=$(grep Error.parsing.slicing.criterion "$parameterO")
+        IFS=':' read -r -a error_splitted &lt;&lt;&lt; "$error"
+        IFS=',' read -r -a splitted_parameters &lt;&lt;&lt; "$parameterC"
+        tmp_trace_parameters=()
+        removable_str="${error_splitted[-1]}"
+        IFS=' ' read -r -a omit_space &lt;&lt;&lt; "$removable_str"
+
+            if ! [[ $removable_str =~ $re ]] ; then
+                removable_str="${omit_space[0]}"
+            fi
+
+            for haystack in "${splitted_parameters[@]}"
+            do
+                if [[ "$haystack" != *"$removable_str"* ]]; then
+                    tmp_trace_parameters+=("$haystack")
+                fi
+            done
+
+        parameterC=$(join , "${tmp_trace_parameters[@]}")
+            if [ -z "$parameterC" ]; then
+                STOP_CONDITION_MET=1
+            fi
+        else
+        STOP_CONDITION_MET=1
+    fi
+done
         </echo>
     </target>
 
@@ -479,11 +534,12 @@ echo -c "Name of class file to trace"
 exit 1 # Exit script after printing help
 }
 
-while getopts "c:p:" opt
+while getopts "c:p:o:" opt
 do
 case "$opt" in
 c ) parameterA="$OPTARG" ;;
 p ) parameterB="$OPTARG" ;;
+o ) parameterO="$OPTARG" ;;
 ? ) helpFunction ;; # Print helpFunction in case parameter is non-existent
 esac
 done
@@ -494,7 +550,7 @@ echo "error: Without providing class file name, I cannot start";
 helpFunction
 fi
 
-$JAVA_HOME/bin/java -Xverify:none -javaagent:${tracer}=tracefile:"$parameterB"/"$parameterA" -cp ${classpathProp} JunitRunnerForD4J "$parameterA"
+$JAVA_HOME/bin/java -Xverify:none -javaagent:${tracer}=tracefile:"$parameterB"/"$parameterA" -cp ${classpathProp} JunitRunnerForD4J "$parameterA" > "$parameterO"
         </echo>
     </target>
 
