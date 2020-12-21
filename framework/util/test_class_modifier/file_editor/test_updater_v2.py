@@ -36,6 +36,8 @@ def surround_with_try_catch_log_exception():
 
 def process_test_expected(idx):
     start, end = get_open_close_brace(idx)
+    if does_it_call_super(start, end):
+        return
     current_line = file_contents[start]
 
     if current_line.__contains__("throws") or file_contents[start - 1].__contains__("throws"):
@@ -52,6 +54,13 @@ def process_test_expected(idx):
     line_idx = current_line.index("}") - 1
     current_line = current_line[0:line_idx] + "\t}catch(" +exception_signature+" e){\n\t\tlogException(e);\n\t\tthrow e;\n\t}\n" + current_line[line_idx:]
     file_contents[end] = current_line
+
+
+def does_it_call_super(start, end):
+    for i in range(start, end+1):
+        if file_contents[i].__contains__("super."):
+            return True
+    return False
 
 
 def get_exception_signature(current_line):
@@ -75,13 +84,13 @@ def get_open_close_brace(idx):
                 file_contents[idx].__contains__("{"):
             if count_braces == -1:
                 count_braces = 0
-            count_braces = count_braces + 1
+            count_braces = count_braces + file_contents[idx].count('{')
             if count_braces == 1:
                 open_brace_index = idx
         if not file_contents[idx].strip().startswith("//") and \
                 not file_contents[idx].strip().startswith("*") and \
                 file_contents[idx].__contains__("}"):
-            count_braces = count_braces - 1
+            count_braces = count_braces - file_contents[idx].count('}')
             if count_braces == 0:
                 close_brace_index = idx
         if count_braces == 0:
