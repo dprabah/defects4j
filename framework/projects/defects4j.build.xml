@@ -435,6 +435,8 @@ project-specific build file ("project_id"/"project_id".build.xml) for the
         <pathconvert property="classpathProp" refid="d4j.test.classpath"/>
         <pathconvert property="manual_tests" refid="all.manual.tests"/>
         <echo file="${d4j.home}/framework/projects/${d4j.project.id}/trace_files/${d4j.bug.id}f/slice.sh" append="false">
+#!/bin/bash
+
 helpFunction(){
 echo ""
 echo "Usage: slice.sh -p trace-parameters -t trace-file"
@@ -527,6 +529,8 @@ done
         <pathconvert property="classpathProp" refid="classpathProperties"/>
         <!--<pathconvert property="manual_tests" refid="all.manual.tests"/>-->
         <echo file="${d4j.home}/framework/projects/${d4j.project.id}/trace_files/${d4j.bug.id}f/trace.sh" append="false">
+#!/bin/bash
+
 helpFunction() {
 echo ""
 echo "Usage: trace.sh -c class file name"
