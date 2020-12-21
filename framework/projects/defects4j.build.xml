@@ -486,34 +486,38 @@ call_slice(){
 re='^[0-9]+$'
 STOP_CONDITION_MET=0
 while [ "$STOP_CONDITION_MET" -eq 0 ]; do
-    call_slice
+call_slice
 
-    error_code=$?
-    if [ "$error_code" -ne 0 ] ; then
-        error=$(grep Error.parsing.slicing.criterion "$parameterO")
-        IFS=':' read -r -a error_splitted &lt;&lt;&lt; "$error"
-        IFS=',' read -r -a splitted_parameters &lt;&lt;&lt; "$parameterC"
-        tmp_trace_parameters=()
-        removable_str="${error_splitted[-1]}"
-        IFS=' ' read -r -a omit_space &lt;&lt;&lt; "$removable_str"
+error_code=$?
+if [ "$error_code" -ne 0 ] ; then
+    error=$(head -n 1 "$parameterO")
+    IFS=':' read -r -a error_splitted &lt;&lt;&lt; "$error"
+    IFS=',' read -r -a splitted_parameters &lt;&lt;&lt; "$parameterC"
+    tmp_trace_parameters=()
+    removable_str="${error_splitted[1]}"
+        if ! [[ $removable_str =~ $re ]] ; then
+            removable_str="${error_splitted[0]}"
+        fi
 
-            if ! [[ $removable_str =~ $re ]] ; then
-                removable_str="${omit_space[0]}"
+    IFS=' ' read -r -a omit_space &lt;&lt;&lt; "$removable_str"
+
+        if ! [[ $removable_str =~ $re ]] ; then
+            removable_str="${omit_space[0]}"
+        fi
+
+    for haystack in "${splitted_parameters[@]}"
+        do
+            if [[ "$haystack" != *"$removable_str"* ]]; then
+                tmp_trace_parameters+=("$haystack")
             fi
+    done
 
-            for haystack in "${splitted_parameters[@]}"
-            do
-                if [[ "$haystack" != *"$removable_str"* ]]; then
-                    tmp_trace_parameters+=("$haystack")
-                fi
-            done
-
-        parameterC=$(join , "${tmp_trace_parameters[@]}")
-            if [ -z "$parameterC" ]; then
-                STOP_CONDITION_MET=1
-            fi
+    parameterC=$(join , "${tmp_trace_parameters[@]}")
+    if [ -z "$parameterC" ]; then
+            STOP_CONDITION_MET=1
+        fi
         else
-        STOP_CONDITION_MET=1
+            STOP_CONDITION_MET=1
     fi
 done
         </echo>
