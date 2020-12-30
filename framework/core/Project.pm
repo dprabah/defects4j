@@ -799,8 +799,8 @@ TODO
 
 sub coverage_report {
     @_ >= 2 or die $ARG_ERROR;
-    my ($self, $source_dir) = @_;
-    return $self->_ant_call_comp("coverage.report", "-Dcoverage.src.dir=$source_dir");
+    my ($self, $source_dir, $dest_folder) = @_;
+    return $self->_ant_call_comp("coverage.report", "-Dcoverage.src.dir=$source_dir -Dcoverage.dest.folder=$dest_folder" );
 }
 
 =pod

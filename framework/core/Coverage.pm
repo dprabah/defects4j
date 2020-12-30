@@ -110,7 +110,7 @@ sub coverage {
 
 	} else {
 		# Generate XML directly if merge is not needed.
-		$project->coverage_report($src_dir) or die "Could not create coverage report";
+		$project->coverage_report($src_dir, "$single_test") or die "Could not create coverage report";
 	}
 
 	return  _get_info_from_xml($xmlfile);
@@ -138,7 +138,7 @@ sub coverage_ext {
 	$project->run_ext_tests($test_dir, $include, $log_file, $single_test) or die "Could not run test suite";
 
     # Generate coverage report
-	$project->coverage_report($src_dir) or die "Could not create report";
+	$project->coverage_report($src_dir, $single_test) or die "Could not create report";
 
     # Parse xml output and return coverage ratios
 	my $xmlfile  = "$project->{prog_root}/$XML_FILE";

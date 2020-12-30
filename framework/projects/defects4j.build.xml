@@ -357,7 +357,7 @@ project-specific build file ("project_id"/"project_id".build.xml) for the
         <mkdir dir="${d4j.dir.coverage.report}" />
 
         <!-- <cobertura-report format="html" destdir="${coverage.dir}" srcdir="${coverage.src.dir}" /> -->
-        <cobertura-report format="xml" destdir="${d4j.dir.coverage.report}" srcdir="${coverage.src.dir}" />
+        <cobertura-report format="xml" destdir="${d4j.dir.coverage.report}/${coverage.dest.folder}" srcdir="${coverage.src.dir}" />
     </target>
 
 <!--
