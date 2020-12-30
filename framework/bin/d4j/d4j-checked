@@ -361,7 +361,10 @@ sub slice {
 
         if (not defined $EXECUTE_CHECKED_STATS){
             trace($trace_file_slice_output_dir, "$current_class_name"."::"."$assertion");
-            $project->_ant_call_comp("run.slicer.script -DtraceParameters=$trace_parameters_to_trace -DtraceFile=$trace_file_path -DsliceOutput=$trace_file_slice_output_path");
+            # $project->_ant_call_comp("run.slicer.script -DtraceParameters=$trace_parameters_to_trace -DtraceFile=$trace_file_path -DsliceOutput=$trace_file_slice_output_path");
+
+            append_given_content_to_file("$CURRENT_BUG_REPORT_DIR/slice.sh -p$trace_parameters_to_trace -t$trace_file_path -o$trace_file_slice_output_path \n",
+                "$CURRENT_BUG_REPORT_DIR/slice.csv");
         }else {
             save_coverage_score($trace_file_slice_output_path, $assertion);
         }
@@ -409,7 +412,10 @@ sub save_coverage_score {
 
 sub trace {
     my ($trace_file_slice_output_dir, $class_name_with_method_name) = @_;
-    $project->_ant_call_comp("run.tracer.script -DtraceFileDirPath=$trace_file_slice_output_dir -DclassName=$class_name_with_method_name");
+    append_given_content_to_file("$CURRENT_BUG_REPORT_DIR/trace.sh -c$class_name_with_method_name -p$trace_file_slice_output_dir -o$trace_file_slice_output_dir/$class_name_with_method_name.junit.txt \n",
+    "$CURRENT_BUG_REPORT_DIR/trace.csv");
+
+    # $project->_ant_call_comp("run.tracer.script -DtraceFileDirPath=$trace_file_slice_output_dir -DclassName=$class_name_with_method_name");
 }
 
 sub extract_line_number{
