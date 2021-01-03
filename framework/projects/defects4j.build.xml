@@ -62,14 +62,17 @@ project-specific build file ("project_id"/"project_id".build.xml) for the
     <property name="formatter.jar" value="${d4j.home}/framework/lib/formatter.jar"/>
     <!-- Directory of compiled test-gen classes -->
     <property name="d4j.dir.classes.testgen" value="${d4j.workdir}/.classes_testgen"/>
+
     <!-- Directory of instrumented classes (e.g., for coverage analysis)-->
-    <property name="d4j.dir.classes.instrumented" value="${d4j.workdir}/.classes_instrumented"/>
+    <property name="d4j.dir.classes.instrumented" value="${d4j.workdir}/${coverage.dest.folder}/.classes_instrumented"/>
+
     <!-- Directory of mutated classes-->
     <property name="d4j.dir.classes.mutated" value="${d4j.workdir}/.classes_mutated"/>
     <!-- Directory of coverage reports-->
-    <property name="d4j.dir.coverage.report" value="${d4j.workdir}" />
+    <property name="d4j.dir.coverage.report" value="${d4j.workdir}/${coverage.dest.folder}" />
+
     <!-- Data file that holds coverage information-->
-    <property name="d4j.file.cobertura.ser" value="cobertura.ser" />
+    <property name="d4j.file.cobertura.ser" value="${d4j.workdir}/${coverage.dest.folder}/cobertura.ser" />
 
     <!-- Additional properties such as tests to exclude.
          This property file is automatically generated. -->
@@ -341,8 +344,10 @@ project-specific build file ("project_id"/"project_id".build.xml) for the
         <pathconvert refid="cobertura.classpath" property="cobertura.classpath.property" />
 
         <delete dir="${d4j.dir.classes.instrumented}"/>
-        <delete file="${d4j.workdir}/${d4j.file.cobertura.ser}"/>
-        <cobertura-instrument failOnError="true" toDir="${d4j.dir.classes.instrumented}" datafile="${d4j.workdir}/${d4j.file.cobertura.ser}">
+<!--        <delete file="${d4j.workdir}/${d4j.file.cobertura.ser}"/> -->
+                <delete file="${d4j.file.cobertura.ser}"/>
+
+	<cobertura-instrument failOnError="true" toDir="${d4j.dir.classes.instrumented}" datafile="${d4j.file.cobertura.ser}">
             <fileset dir="${classes.dir}" includes="${d4j.classes.instrument}" />
             <auxClasspath>
                 <path refid="compile.classpath" />
@@ -350,14 +355,18 @@ project-specific build file ("project_id"/"project_id".build.xml) for the
         </cobertura-instrument>
         <!-- Backup instrumented classes and empty data file -->
         <copy file="${d4j.workdir}/${d4j.properties}" todir="${d4j.dir.classes.instrumented}" overwrite="true"/>
-        <copy file="${d4j.workdir}/${d4j.file.cobertura.ser}" todir="${d4j.dir.classes.instrumented}" overwrite="true"/>
+<!--        <copy file="${d4j.workdir}/${d4j.file.cobertura.ser}" todir="${d4j.dir.classes.instrumented}" overwrite="true"/> -->
+
+        <copy file="${d4j.file.cobertura.ser}" todir="${d4j.dir.classes.instrumented}" overwrite="true"/>
+
     </target>
 
     <target name="coverage.report">
         <mkdir dir="${d4j.dir.coverage.report}" />
 
-        <!-- <cobertura-report format="html" destdir="${coverage.dir}" srcdir="${coverage.src.dir}" /> -->
-        <cobertura-report format="xml" destdir="${d4j.dir.coverage.report}/${coverage.dest.folder}" srcdir="${coverage.src.dir}" />
+<!--        <cobertura-report format="html" datafile="${d4j.file.cobertura.ser}" destdir="${d4j.dir.coverage.report}" srcdir="${coverage.src.dir}" /> -->
+        <cobertura-report format="xml" datafile="${d4j.file.cobertura.ser}" destdir="${d4j.dir.coverage.report}" srcdir="${coverage.src.dir}" />
+<!--        <cobertura-report format="xml" destdir="${d4j.dir.coverage.report}/${coverage.dest.folder}" srcdir="${coverage.src.dir}" /> -->
     </target>
 
 <!--
@@ -397,8 +406,8 @@ project-specific build file ("project_id"/"project_id".build.xml) for the
     Reset Cobertura's data file if the instrumented classes can be re-used
 -->
     <target name="reset.cobertura.ser" if="classes.instrumented.uptodate">
-        <copy file="${d4j.dir.classes.instrumented}/${d4j.file.cobertura.ser}"
-              todir="${d4j.workdir}" overwrite="true" />
+        <copy file="${d4j.dir.classes.instrumented}/cobertura.ser"
+              todir="${d4j.file.cobertura.ser}" overwrite="true" />
     </target>
 
 

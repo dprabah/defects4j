@@ -570,7 +570,7 @@ sub run_tests {
         $single_test_opt = "-Dtest.entry.class=$1 -Dtest.entry.method=$2";
     }
 
-    return $self->_ant_call_comp("run.dev.tests", "-DOUTFILE=$out_file $single_test_opt");
+    return $self->_ant_call_comp("run.dev.tests", "-DOUTFILE=$out_file -Dcoverage.dest.folder=$single_test $single_test_opt");
 }
 
 =pod

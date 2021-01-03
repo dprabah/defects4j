@@ -84,21 +84,32 @@ sub coverage {
 	my $serfile  = "$root/$SER_FILE";
 
     # Remove stale data file
-    system("rm -f $serfile");
+    # system("rm -f $serfile");
 
     # Instrument all classes provided - ALESSIO Added PATCH
-	$project->coverage_instrument($instrument_classes, $single_test) or return undef;
+#	$project->coverage_instrument($instrument_classes, $single_test) or return undef;
 
     # Execute test suite
     if ($relevant_tests) {
+
+  # Remove stale data file
+    system("rm -f $serfile");
+# TODO Not sure whether this is ok without single test
+        $project->coverage_instrument($instrument_classes) or return undef;
+
         $project->run_relevant_tests($log_file) or return undef;
     } else {
 	$datafile = "$root/$single_test/datafile";
         $xmlfile  = "$root/$single_test/$XML_FILE";
         $serfile  = "$root/$single_test/$SER_FILE";
 
+        # Remove stale data file in the test folder
+        system("rm -f $serfile");
 
-        $project->run_tests($log_file, $single_test) or return undef;
+        # Instrument all classes provided - ALESSIO Added PATCH
+        $project->coverage_instrument($instrument_classes, "$single_test") or return undef;
+
+        $project->run_tests($log_file, "$single_test") or return undef;
     }
 
 	# Generate coverage report
@@ -114,8 +125,8 @@ sub coverage {
 		system("sh $CORBETURA_REPORT --format xml --datafile $datafile --destination $root >/dev/null 2>&1") == 0 or die "could not create report";
 
 	} else {
-		# Generate XML directly if merge is not needed.
-		$project->coverage_report($src_dir, "$single_test") or die "Could not create coverage report";
+		# Generate XML directly if merge is not needed. TODO? WHY "$single_test" and not $single_test?
+		$project->coverage_report($src_dir, $single_test) or die "Could not create coverage report";
 	}
 
 	return  _get_info_from_xml($xmlfile);
