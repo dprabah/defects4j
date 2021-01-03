@@ -86,13 +86,18 @@ sub coverage {
     # Remove stale data file
     system("rm -f $serfile");
 
-    # Instrument all classes provided
-	$project->coverage_instrument($instrument_classes) or return undef;
+    # Instrument all classes provided - ALESSIO Added PATCH
+	$project->coverage_instrument($instrument_classes, $single_test) or return undef;
 
     # Execute test suite
     if ($relevant_tests) {
         $project->run_relevant_tests($log_file) or return undef;
     } else {
+	$datafile = "$root/$single_test/datafile";
+        $xmlfile  = "$root/$single_test/$XML_FILE";
+        $serfile  = "$root/$single_test/$SER_FILE";
+
+
         $project->run_tests($log_file, $single_test) or return undef;
     }
 

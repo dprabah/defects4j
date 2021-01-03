@@ -757,8 +757,8 @@ Instruments classes listed in F<instrument_classes> for use with cobertura.
 =cut
 
 sub coverage_instrument {
-    @_ == 2 or die $ARG_ERROR;
-    my ($self, $instrument_classes) = @_;
+    @_ == 3 or die $ARG_ERROR;
+    my ($self, $instrument_classes, $dest_folder) = @_;
     my $work_dir = $self->{prog_root};
 
     -e $instrument_classes or die "Instrument classes file '$instrument_classes' does not exist!";
@@ -786,7 +786,7 @@ sub coverage_instrument {
     Utils::write_config_file("$work_dir/$PROP_FILE", $config);
 
     # Call ant to do the instrumentation
-    return $self->_ant_call_comp("coverage.instrument");
+    return $self->_ant_call_comp("coverage.instrument", "-Dcoverage.dest.folder=$dest_folder");
 }
 
 =pod
