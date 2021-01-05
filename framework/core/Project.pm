@@ -788,11 +788,12 @@ sub coverage_instrument {
     # by the defects4j.build.xml file.
     my $list = join(",", @classes_and_inners);
     my $config = {$PROP_INSTRUMENT => $list};
-    Utils::write_config_file("$work_dir/$PROP_FILE", $config);
+    # Skip this but pass the value as parameter instead
+    # Utils::write_config_file("$work_dir/$PROP_FILE", $config);
 
     # Call ant to do the instrumentation
     # -Dcoverage.dest.folder=$single_test
-    return $self->_ant_call_comp("coverage.instrument", "-Dcoverage.dest.folder=$dest_folder");
+    return $self->_ant_call_comp("coverage.instrument", "-Dcoverage.dest.folder=$dest_folder -Dd4j.classes.instrument=$list");
 }
 
 =pod
