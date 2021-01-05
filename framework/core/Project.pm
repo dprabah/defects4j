@@ -532,7 +532,7 @@ If F<log_file> is provided, the compiler output is written to this file.
 
 sub compile {
     my ($self, $log_file) = @_;
-    return $self->_ant_call_comp("compile", undef, $log_file);
+    return $self->_ant_call_comp("compile", undef, undef, $log_file);
 }
 
 =pod
@@ -546,7 +546,7 @@ If F<log_file> is provided, the compiler output is written to this file.
 
 sub compile_tests {
     my ($self, $log_file) = @_;
-    return $self->_ant_call_comp("compile.tests", undef, $log_file);
+    return $self->_ant_call_comp("compile.tests", undef, undef, $log_file);
 }
 
 =pod
@@ -560,6 +560,8 @@ Format of C<single_test>: <classname>::<methodname>.
 
 =cut
 
+use File::Basename;
+
 sub run_tests {
     @_ >= 2 or die $ARG_ERROR;
     my ($self, $out_file, $single_test) = @_;
@@ -570,7 +572,10 @@ sub run_tests {
         $single_test_opt = "-Dtest.entry.class=$1 -Dtest.entry.method=$2";
     }
 
-    return $self->_ant_call_comp("run.dev.tests", "-DOUTFILE=$out_file -Dcoverage.dest.folder=$single_test $single_test_opt");
+    my $base_dir_folder = dirname($out_file);
+
+    return $self->_ant_call_comp("run.dev.tests", "-DOUTFILE=$out_file -Dcoverage.dest.folder=$single_test $single_test_opt", 
+				"-Dnet.sourceforge.cobertura.datafile=$base_dir_folder/$single_test/cobertura.ser");
 }
 
 =pod
@@ -786,6 +791,7 @@ sub coverage_instrument {
     Utils::write_config_file("$work_dir/$PROP_FILE", $config);
 
     # Call ant to do the instrumentation
+    # -Dcoverage.dest.folder=$single_test
     return $self->_ant_call_comp("coverage.instrument", "-Dcoverage.dest.folder=$dest_folder");
 }
 
@@ -1100,18 +1106,24 @@ sub _get_classes {
 # Helper function to call Ant
 #
 sub _ant_call {
-    @_ >= 2 or die $ARG_ERROR;
-    my ($self, $target, $option_str, $log_file, $ant_cmd) =  @_;
+    @_ >= 3 or die $ARG_ERROR;
+    my ($self, $target, $option_str, $ant_options, $log_file, $ant_cmd) =  @_;
     $option_str = "" unless defined $option_str;
-    $ant_cmd = "ant" unless defined $ant_cmd;
+    $ant_options = "" unless defined $ant_options;
+
+    # Use the available ant, not the one provided by major !
+    $ant_cmd = "ant"; # unless defined $ant_cmd;
 
     # Set up environment before running ant
     my $cmd = " cd $self->{prog_root}" .
+	      " && export ANT_OPTS=\"$ant_options\"" .
               " && $ant_cmd" .
                 " -f $D4J_BUILD_FILE" .
                 " -Dd4j.home=$BASE_DIR" .
                 " -Dd4j.dir.projects=$PROJECTS_DIR" .
                 " -Dbasedir=$self->{prog_root} ${option_str} $target 2>&1";
+# Alessio: This is to debug what ant command we are executing
+#    print STDOUT "\n\n RUNNING ANT COMMAND: $cmd \n\n" ;
     my $log;
     my $ret = Utils::exec_cmd($cmd, "Running ant ($target)", \$log);
 
@@ -1130,10 +1142,10 @@ sub _ant_call {
 #
 sub _ant_call_comp {
     @_ >= 2 or die $ARG_ERROR;
-    my ($self, $target, $option_str, $log_file, $ant_cmd) =  @_;
+    my ($self, $target, $option_str, $ant_options, $log_file, $ant_cmd) =  @_;
     $option_str = "-Dbuild.compiler=javac1.7 " . ($option_str // "");
     $ant_cmd = "$MAJOR_ROOT/bin/ant" unless defined $ant_cmd;
-    return $self->_ant_call($target, $option_str, $log_file, $ant_cmd);
+    return $self->_ant_call($target, $option_str, $ant_options, $log_file, $ant_cmd);
 }
 sub _call_major {
     @_ >= 2 or die $ARG_ERROR;

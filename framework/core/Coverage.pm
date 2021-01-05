@@ -107,9 +107,9 @@ sub coverage {
         system("rm -f $serfile");
 
         # Instrument all classes provided - ALESSIO Added PATCH
-        $project->coverage_instrument($instrument_classes, "$single_test") or return undef;
+        $project->coverage_instrument($instrument_classes, $single_test) or return undef;
 
-        $project->run_tests($log_file, "$single_test") or return undef;
+        $project->run_tests($log_file, $single_test) or return undef;
     }
 
 	# Generate coverage report
