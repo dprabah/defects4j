@@ -29,17 +29,31 @@ project-specific build file ("project_id"/"project_id".build.xml) for the
 #############################################################################-->
 <project name="Defects4J" basedir="${basedir}">
 
+   <scriptdef name="generateguid" language="javascript">
+      <attribute name="property" />
+       <![CDATA[
+var version = java.lang.System.getProperty("java.version");
+if (version.startsWith("1.8.0")) {
+    load("nashorn:mozilla_compat.js");
+}
+    importClass( java.util.UUID );
+
+    project.setProperty( attributes.get( "property" ), UUID.randomUUID() );
+    ]]>
+    </scriptdef>
+
+    <generateguid property="guid1" />
+    <echo message="${guid1}" />
+
     <!-- Ensure basedir is properly set -->
     <property name="d4j.workdir" value="${basedir}" />
 
     <!-- Make sure that d4j.properties is unique per test -->
     <property name="d4j.properties.original" value="defects4j.build.properties" />
 
-    <tempfile property="d4j.tmp.properties" suffix=".defects4j.build.properties" destDir="${d4j.workdir}" deleteonexit="true" />
+    <tempfile property="d4j.tmp.properties" prefix="${guid1}" suffix=".defects4j.build.properties" destDir="${d4j.workdir}" deleteonexit="true" />
 
     <basename property="d4j.properties" file="${d4j.tmp.properties}"/>
-
-<!--    <property name="d4j.properties" value="defects4j.build.properties" /> -->
 
     <copy file="${d4j.properties.original}" tofile="${d4j.tmp.properties}" overwrite="true"/>
 
