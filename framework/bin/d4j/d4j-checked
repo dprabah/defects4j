@@ -54,8 +54,6 @@ unless(defined $config and defined $props){
 }
 
 my @grep_assert_patterns = ('check.*(*', 'Assert.*(*', 'assert.*(*', 'test(*', 'testSame(*', 'verify.*(*', 'logException(.*);');
-my @ignorable_strings = ('try', 'return');
-my $ignorable_strings = join ",", @ignorable_strings;
 my $CURRENT_BUG_TRACE_FILE_DIR = "$PROJECTS_DIR/$config->{$CONFIG_PID}/trace_files";
 my $ALL_TESTS_FILE = "$WORK_DIR/$FILE_ALL_TESTS";
 my $CURRENT_BUG_REPORT_DIR = "$CURRENT_BUG_TRACE_FILE_DIR/$config->{$CONFIG_VID}";
@@ -65,7 +63,6 @@ my $CHECKED_COVERAGE = "$CURRENT_BUG_REPORT_DIR/checked_coverage.json";
 my $CURRENT_BUG_SKIP_ABLE_FILE = "$CURRENT_BUG_TRACE_FILE_DIR/skip_files.json";
 my $CURRENT_BUG_TRACING_DONE_FILE = "$CURRENT_BUG_REPORT_DIR/tracing_completed.json";
 my $TEST_MODIFIER_PATH = "$UTIL_DIR/test_class_modifier/app.py";
-my $TEST_ASSERT_LINE_MODIFIER = "$UTIL_DIR/test_class_modifier/assert_line_modifier.py";
 my $LINE_COVERAGE_CALC_PATH = "$UTIL_DIR/test_class_modifier/compute_statement_coverage.py";
 my $UPDATE_CHECKED_JSON_SCRIPT_PATH = "$UTIL_DIR/test_class_modifier/update_checked_json.py";
 my $EXPORT_SRC_CLASS_FILE_PATH = "$WORK_DIR/all_classes";
@@ -123,8 +120,6 @@ if(defined $EXECUTE_BOTH or defined $IS_COMPUTE_COVERAGE_REPORT){
         my @test_methods = `cat $ALL_TEST_METHODS | grep $test_class`;
         foreach(@test_methods){
             my $current_test_method = Utils::convert_formatter_output_to_test_method($_);
-            my $RAW_COVERAGE_XML = "$WORK_DIR/$current_test_method/coverage.xml";
-            unlink($RAW_COVERAGE_XML);
             append_given_content_to_file("defects4j coverage -i $EXPORT_SRC_CLASS_FILE_PATH -t $current_test_method -w $WORK_DIR\n",
                 "$CURRENT_BUG_REPORT_DIR/statement.csv");
         }
