@@ -127,12 +127,12 @@ if(defined $EXECUTE_BOTH or defined $IS_COMPUTE_COVERAGE_REPORT){
             unlink($RAW_COVERAGE_XML);
             append_given_content_to_file("defects4j coverage -i $EXPORT_SRC_CLASS_FILE_PATH -t $current_test_method -w $WORK_DIR\n",
                 "$CURRENT_BUG_REPORT_DIR/statement.csv");
-            append_given_content_to_file("python3 $LINE_COVERAGE_CALC_PATH $RAW_COVERAGE_XML $CURRENT_BUG_REPORT_DIR $current_test_method '' 'ignore_line_details' \n\n",
-                "$CURRENT_BUG_REPORT_DIR/statement_coverage_gen.csv");
         }
     }
+    append_given_content_to_file("python3 $LINE_COVERAGE_CALC_PATH $WORK_DIR $CURRENT_BUG_REPORT_DIR \n\n",
+        "$CURRENT_BUG_REPORT_DIR/statement_coverage_gen.csv");
     print("\n statement coverage file generation completed \n");
-    print(`python3 $LINE_COVERAGE_CALC_PATH "$WORK_DIR/coverage.xml" $CURRENT_BUG_REPORT_DIR $WORK_DIR/$props->{$PROP_DIR_SRC_CLASSES} $ignorable_strings 'line_details'`);
+    print(`python3 $LINE_COVERAGE_CALC_PATH "$WORK_DIR/coverage.xml" $CURRENT_BUG_REPORT_DIR $WORK_DIR/$props->{$PROP_DIR_SRC_CLASSES} 'line_details'`);
     print("coverable lines generation completed. \n");
     if (not defined $EXECUTE_BOTH){
         exit(0);

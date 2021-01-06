@@ -4,14 +4,13 @@ from coverage_calculator import statement_score
 
 
 def main():
-    arguments = len(sys.argv) - 5
-    if arguments != 1:
-        print("please verify arguments, size mismatch")
-        sys.exit(2)
-    if sys.argv[5] == "line_details":
-        statement_score.compute_coverable_lines(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
+    if len(sys.argv) == 5:
+        statement_score.compute_coverable_lines(sys.argv[1], sys.argv[2], sys.argv[3])
+    elif len(sys.argv) == 3:
+        statement_score.generate_parameters_compute(sys.argv[1], sys.argv[2])
     else:
-        statement_score.compute(sys.argv[1], sys.argv[2], sys.argv[3])
+        print("verify length of arguments")
+        exit(0)
 
 
 if __name__ == "__main__":
