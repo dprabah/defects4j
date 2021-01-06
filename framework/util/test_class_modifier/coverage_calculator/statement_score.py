@@ -1,7 +1,17 @@
+import os
 from os import path
 from xml.dom import minidom
 import json
 import re
+
+
+def generate_parameters_compute(checked_code_root, json_store_path):
+    for root, dirs, files in os.walk(os.path.abspath(checked_code_root)):
+        for file in files:
+            xml_file_path = os.path.join(root, file)
+            if xml_file_path.__contains__("::") and xml_file_path.endswith("coverage.xml"):
+                print("Computing for -> " + str(xml_file_path))
+                compute(xml_file_path, json_store_path, xml_file_path.split("/")[-2])
 
 
 def compute(xml_file_path, json_store_path, executed_method):
