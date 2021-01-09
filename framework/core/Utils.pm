@@ -40,6 +40,7 @@ use strict;
 use File::Basename;
 use File::Spec;
 use File::Find;
+use File::Slurp;
 use Cwd qw(abs_path);
 use Carp qw(confess);
 use Fcntl qw< LOCK_EX SEEK_END >;
@@ -682,8 +683,9 @@ sub convert_filename_to_java_name {
 }
 
 sub get_relevant_classes{
-    my ($root_dir, $tests_dir_path) = @_;
-    push my @relevant_tests, `defects4j export -p tests.relevant`;
+    my ($root_dir, $tests_dir_path, $relevant_test_file) = @_;
+    my @relevant_tests = read_file("$relevant_test_file", chomp => 1);
+    # push my @relevant_tests, `defects4j export -p tests.relevant`;
     my @relevant_tests_as_file_path;
     foreach(@relevant_tests){
         #excluding the sub class tests

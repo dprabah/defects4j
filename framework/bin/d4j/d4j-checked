@@ -67,9 +67,11 @@ my $LINE_COVERAGE_CALC_PATH = "$UTIL_DIR/test_class_modifier/compute_statement_c
 my $UPDATE_CHECKED_JSON_SCRIPT_PATH = "$UTIL_DIR/test_class_modifier/update_checked_json.py";
 my $EXPORT_SRC_CLASS_FILE_PATH = "$WORK_DIR/all_classes";
 $config->{$CONFIG_VID} =~ /(\d+)/;
-my $previous_bug_report_number = int($1) - 1;
+my $current_bug_report_number = int($1);
+my $previous_bug_report_number = int($current_bug_report_number) - 1;
 $config->{$CONFIG_VID} =~ /(\D+)/;
 my $previous_bug_report_id = $1;
+my $RELEVANT_TEST_FILE = "$PROJECTS_DIR/$config->{$CONFIG_PID}/relevant_tests/$current_bug_report_number";
 my $PREVIOUS_BUG_REPORT_FILE = "$CURRENT_BUG_TRACE_FILE_DIR/$previous_bug_report_number$previous_bug_report_id/checked_coverage_report.json";
 my $PREVIOUS_BUG_TRACING_DONE_FILE = "$CURRENT_BUG_TRACE_FILE_DIR/$previous_bug_report_number$previous_bug_report_id/tracing_completed.json";
 my $CONST_HASH_DIGEST = "HASH_DIGEST";
@@ -84,7 +86,9 @@ my $CONST_SAME_HASH = "SAME_HASH";
 my $project = Project::create_project($config->{$CONFIG_PID});
 $project->{prog_root} = $WORK_DIR;
 
-my @tests = Utils::get_relevant_classes($WORK_DIR, $props->{$PROP_DIR_SRC_TESTS});
+my @tests = Utils::get_relevant_classes($WORK_DIR, $props->{$PROP_DIR_SRC_TESTS}, $RELEVANT_TEST_FILE);
+print(@tests);
+exit(0);
 if(defined $EXECUTE_ALL){
     @tests = Utils::get_all_classes($WORK_DIR, $props->{$PROP_DIR_SRC_TESTS});
 }
