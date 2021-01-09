@@ -87,8 +87,6 @@ my $project = Project::create_project($config->{$CONFIG_PID});
 $project->{prog_root} = $WORK_DIR;
 
 my @tests = Utils::get_relevant_classes($WORK_DIR, $props->{$PROP_DIR_SRC_TESTS}, $RELEVANT_TEST_FILE);
-print(@tests);
-exit(0);
 if(defined $EXECUTE_ALL){
     @tests = Utils::get_all_classes($WORK_DIR, $props->{$PROP_DIR_SRC_TESTS});
 }
@@ -102,6 +100,13 @@ my %assertions;
 my $current_class_name;
 my $total_number_of_tests = scalar @tests;
 my $total_number_of_tests_for_conv = $total_number_of_tests;
+
+if (defined $EXECUTE_CHECKED_STATS) {
+    print("Starting to combine checked coverage score! \n");
+    print(`python3 $UPDATE_CHECKED_JSON_SCRIPT_PATH $CHECKED_COVERAGE`);
+    print("Done!");
+    exit(0);
+}
 
 print(`defects4j compile`); #compile to generate compileLib in defects4j.build.xml
 if(defined $EXECUTE_BOTH or defined $IS_COMPUTE_COVERAGE_REPORT){
@@ -163,7 +168,7 @@ if(defined $EXECUTE_BOTH or defined $IS_COMPUTE_COVERAGE_REPORT){
 print("Starting to compute checked coverage \n");
 # Creates a script file, trace.sh in home dir, to generate trace for the provided class.
 $project->_ant_call_comp("create.tracer.script");
-$project->_ant_call_comp("create.slicer.script");
+$project->_ant_call_comp("create.slicer.script", "-Dbug-report-file=$CURRENT_BUG_REPORT_FILE");
 
 print("Total number of tests: $total_number_of_tests \n");
 print("Begin to modify assert by exception tests \n");
@@ -233,8 +238,6 @@ foreach my $test (@tests) {
         print("Time I took to finish computation: $time_took\n");
     # }
 }
-
-print(`python3 $UPDATE_CHECKED_JSON_SCRIPT_PATH $CURRENT_BUG_REPORT_FILE $CHECKED_COVERAGE`);
 
 sub store_current_completed_list{
     open my $fh, '>', $CURRENT_BUG_TRACING_DONE_FILE;
@@ -358,15 +361,12 @@ sub slice {
 
         print("slicing for assertion method: $assertion\n");
 
-        if (not defined $EXECUTE_CHECKED_STATS){
-            trace($trace_file_slice_output_dir, "$current_class_name"."::"."$assertion");
-            # $project->_ant_call_comp("run.slicer.script -DtraceParameters=$trace_parameters_to_trace -DtraceFile=$trace_file_path -DsliceOutput=$trace_file_slice_output_path");
+        my $class_name_with_method_name = "$current_class_name"."::"."$assertion";
+        trace($trace_file_slice_output_dir, "$class_name_with_method_name");
+        # $project->_ant_call_comp("run.slicer.script -DtraceParameters=$trace_parameters_to_trace -DtraceFile=$trace_file_path -DsliceOutput=$trace_file_slice_output_path");
 
-            append_given_content_to_file("$CURRENT_BUG_REPORT_DIR/slice.sh -p$trace_parameters_to_trace -t$trace_file_path -o$trace_file_slice_output_path \n",
-                "$CURRENT_BUG_REPORT_DIR/slice.csv");
-        }else {
-            save_coverage_score($trace_file_slice_output_path, $assertion);
-        }
+        append_given_content_to_file("$CURRENT_BUG_REPORT_DIR/slice.sh -c$class_name_with_method_name -p$trace_parameters_to_trace -t$trace_file_path -o$trace_file_slice_output_path \n",
+            "$CURRENT_BUG_REPORT_DIR/slice.csv");
 
         delete($assertions{Utils::trim($assertion)});
         $trace_parameters = generate_trace_param();
