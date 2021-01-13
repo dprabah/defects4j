@@ -8,8 +8,14 @@ def read_json_file(file_path):
         # print("File not exist!" + file_path)
         output = {}
     else:
-        with open(file_path, encoding="ISO-8859-1") as fp:
-            output = json.load(fp)
+        with open(file_path, encoding="ISO-8859-1", mode='r') as fp:
+            try:
+                output = json.load(fp)
+            except json.decoder.JSONDecodeError:
+                with open(file_path, mode='r') as fps:
+                    data = fps.read()
+                    data = data.replace('}\n{', '}\n\n\n{')
+                    output = json.loads(data.split('\n\n\n')[0])
 
     for key in output:
         for slave in output[key]:
