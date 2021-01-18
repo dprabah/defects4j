@@ -1,0 +1,1 @@
+{"com.fasterxml.jackson.databind.ser.impl.WritableObjectId": {"statement_coverable_lines": [26, 28, 29, 30, 34, 36, 37, 39, 41, 43, 50, 51, 53, 62, 65, 67, 68, 71, 72, 73, 74, 76], "checked_coverable_lines": [26, 28, 29, 34, 36, 37, 39, 41, 43, 50, 51, 53, 62, 65, 67, 68, 71, 72, 73, 74]}}
