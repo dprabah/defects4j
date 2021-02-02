@@ -890,7 +890,8 @@ sub mutation_analysis {
 
     return $self->_call_major("mutation.test",
                             "-Dmajor.kill.log=$basedir/$Mutation::KILL_FILE " .
-                            "$relevant $log $exclude $single_test_opt");
+                            "$relevant $log $exclude $single_test_opt" .
+                            "-Dmajor.sort=sort_methods");
 }
 
 =pod
@@ -1113,6 +1114,7 @@ sub _ant_call {
                 " -Dd4j.dir.projects=$PROJECTS_DIR" .
                 " -Dbasedir=$self->{prog_root} ${option_str} $target 2>&1";
     my $log;
+    print("\n $cmd \n");
     my $ret = Utils::exec_cmd($cmd, "Running ant ($target)", \$log);
 
     if (defined $log_file) {
