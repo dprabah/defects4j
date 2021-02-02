@@ -219,10 +219,11 @@ project-specific build file ("project_id"/"project_id".build.xml) for the
             mutationAnalysis="true"
             timeoutFactor="16"
             sort="${major.sort}"
-            haltonfailure="true"
+            haltonfailure="false"
             killDetailsFile="${major.kill.log}"
             excludeFile="${major.exclude}"
             exportKillMap="true"
+            excludeFailingTests="true"
             >
 
             <!--
