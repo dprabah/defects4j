@@ -16,8 +16,8 @@ echo "STARTING TO CHECKOUT THE PROJECTS"
 
 for i in $(seq "$start_bug" "$end_bug");
 do
-    dir_name="/home/"$user_name"/tmp/"$bug_code"_"$i"_fixed"
-    # dir_name="/scratch/gambi/checked-coverage/tmp/"$bug_code"_"$i"_fixed"
+    # dir_name="/home/"$user_name"/tmp/"$bug_code"_"$i"_fixed"
+    dir_name="/scratch/gambi/checked-coverage/tmp/"$bug_code"_"$i"_fixed"
 
     bug_id=$i"f"
     defects4j_path=$(which defects4j)
@@ -43,8 +43,8 @@ echo "Clonning completed."
 echo "Starting computation."
 for i in $(seq "$start_bug" "$end_bug");
 do
-    dir_name="/home/"$user_name"/tmp/"$bug_code"_"$i"_fixed"
-    # dir_name="/scratch/gambi/checked-coverage/tmp/"$bug_code"_"$i"_fixed"
+    # dir_name="/home/"$user_name"/tmp/"$bug_code"_"$i"_fixed"
+    dir_name="/scratch/gambi/checked-coverage/tmp/"$bug_code"_"$i"_fixed"
 
     bug_id=$i"f"
     defects4j_path=$(which defects4j)
@@ -60,7 +60,7 @@ do
       if [ ! -d "$log_file_dir" ]; then
         mkdir -p "$log_file_dir"
       fi
-      defects4j mutation 2>&1 | tee -a "$log_file"
+      srun defects4j mutation 2>&1 | tee -a "$log_file"
     else
       echo "Project is missing. First check out the project"
     fi
