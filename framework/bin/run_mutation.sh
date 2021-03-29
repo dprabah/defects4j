@@ -13,11 +13,12 @@ done
 
 # we checkout all the projects initially
 echo "STARTING TO CHECKOUT THE PROJECTS"
+parent_folder="/home/"$user_name
+parent_folder="/scratch/durairaj/mutation_testing"
 
 for i in $(seq "$start_bug" "$end_bug");
 do
-    dir_name="/home/"$user_name"/tmp/"$bug_code"_"$i"_fixed"
-    dir_name="/scratch/durairaj/checked-coverage/tmp/"$bug_code"_"$i"_fixed"
+    dir_name="$parent_folder/tmp/"$bug_code"_"$i"_fixed"
 
     bug_id=$i"f"
     defects4j_path=$(which defects4j)
@@ -40,52 +41,22 @@ do
 done
 echo "Clonning completed."
 
-echo "Starting computation."
+echo "Starting to create mutation csv."
 for i in $(seq "$start_bug" "$end_bug");
 do
-    dir_name="/home/"$user_name"/tmp/"$bug_code"_"$i"_fixed"
-    dir_name="/scratch/durairaj/checked-coverage/tmp/"$bug_code"_"$i"_fixed"
+    dir_name="$parent_folder/tmp/"$bug_code"_"$i"_fixed"
 
     bug_id=$i"f"
     defects4j_path=$(which defects4j)
     defects4j_path=${defects4j_path::-24}
-    log_file_dir=$defects4j_path"/framework/projects/$bug_code/trace_files/"$bug_id
-    log_file="$log_file_dir/setup-running.log"
-
-    echo ">> Logging to ${log_file}"
 
     if [ -d "$dir_name" ]; then
-      echo "bug ${bug_code}-${bug_id} creating srun job script"
-      cd "$dir_name"
-      if [ ! -d "$log_file_dir" ]; then
-        mkdir -p "$log_file_dir"
-      fi
-      echo $'#!/bin/bash \nsrun defects4j mutation -w' $dir_name > jobs_$i.sh
+      echo "bug ${bug_code}-${bug_id} appending mutation script to csv"
+      cd "$parent_folder"
+      echo "defects4j mutation -w $dir_name" >> mutation_jobs.csv
     else
       echo "Project is missing. First check out the project"
     fi
 done
 
-echo "Starting to submit as batch."
-for i in $(seq "$start_bug" "$end_bug");
-do
-    dir_name="/home/"$user_name"/tmp/"$bug_code"_"$i"_fixed"
-    dir_name="/scratch/durairaj/checked-coverage/tmp/"$bug_code"_"$i"_fixed"
-
-    bug_id=$i"f"
-    defects4j_path=$(which defects4j)
-    defects4j_path=${defects4j_path::-24}
-    log_file_dir=$defects4j_path"/framework/projects/$bug_code/trace_files/"$bug_id
-    log_file="$log_file_dir/setup-running.log"
-
-    if [ -d "$dir_name" ]; then
-      echo "bug ${bug_code}-${bug_id} submitting sbatch"
-      cd "$dir_name"
-      if [ ! -d "$log_file_dir" ]; then
-        mkdir -p "$log_file_dir"
-      fi
-      sbatch --exclude=zeus[01-24],pontipine[01-12] jobs_$i.sh
-    else
-      echo "Project is missing. First check out the project"
-    fi
-done
+echo $'\ncsv file generation done in file placed in \n'"$parent_folder/mutation_jobs.csv"
