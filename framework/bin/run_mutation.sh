@@ -14,7 +14,7 @@ done
 # we checkout all the projects initially
 echo "STARTING TO CHECKOUT THE PROJECTS"
 parent_folder="/home/"$user_name
-parent_folder="/scratch/durairaj/mutation_testing"
+parent_folder="/scratch/gambi/mutation_testing"
 
 for i in $(seq "$start_bug" "$end_bug");
 do
